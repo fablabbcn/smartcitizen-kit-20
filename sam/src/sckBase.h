@@ -229,8 +229,8 @@ public:
 	// Modes
 	void changeMode(SCKmodes newMode);
 	void errorMode();
-	SCKmodes prevMode = MODE_NET;
-	SCKmodes default_mode = MODE_NET;
+	SCKmodes prevMode = MODE_SD;
+	SCKmodes default_mode = MODE_SD;
 
 	const char *modeTitles[MODE_COUNT] PROGMEM = {
 		"setup",		// modeTitles[MODE_SETUP]
@@ -462,7 +462,7 @@ public:
 	ESPstatus espStatus;
 	ESPstatus prevEspStatus;
 	float statusPoolingInterval = 500;		// ESP status pooling interval in ms
-	const uint32_t ESP_FLASH_SPEED = 115200;
+	const uint32_t ESP_FLASH_SPEED = 921600;
 
 	// Time
 	bool setTime(String epoch);

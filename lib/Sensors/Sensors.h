@@ -64,8 +64,8 @@ enum SensorType {
 	SENSOR_COUNT	
 };
 
-const uint32_t minimal_sensor_reading_interval = 30;
-const uint32_t default_sensor_reading_interval = 30;
+const uint32_t minimal_sensor_reading_interval = 60;
+const uint32_t default_sensor_reading_interval = 60;
 const uint32_t max_sensor_reading_interval = 86400;		// One day
 
 // Structs for RAM storing
@@ -126,7 +126,7 @@ public:
 						
 		// Base Sensors						
 		OneSensor {	BOARD_BASE, 		SENSOR_BATTERY, 					"Battery", 								10,		true,		false,			"%"},
-		OneSensor {	BOARD_BASE, 		SENSOR_VOLTIN,						"Input voltage", 						0,		false,		false,			"V"},
+		OneSensor {	BOARD_BASE, 		SENSOR_VOLTIN,						"Input voltage", 						0,		true,		false,			"V"},
 
 		// Urban Sensors
 		OneSensor {	BOARD_URBAN, 		SENSOR_NOISE, 						"Noise", 								29,		true,		false,			"dBc"},
@@ -135,16 +135,16 @@ public:
 		OneSensor {	BOARD_URBAN, 		SENSOR_LIGHT, 						"Light", 								14,		true,		false,			"Lux"},
 		OneSensor {	BOARD_URBAN, 		SENSOR_CO, 							"Carbon monoxide", 						16,		true,		true,			"kOhm/ppm"},
 		OneSensor {	BOARD_URBAN, 		SENSOR_CO_HEAT_TIME, 				"Carbon monoxide heat time",			0,		false,		false,			"sec"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_CO_HEAT_CURRENT, 			"Carbon monoxide heat current",			0,		false,		false,			"mA"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_CO_HEAT_SUPPLY_VOLTAGE, 		"Carbon monoxide heat supply voltage",	0,		false,		false,			"mV"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_CO_HEAT_DROP_VOLTAGE, 		"Carbon monoxide heat drop voltage",	0,		false,		false,			"mV"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_CO_LOAD_RESISTANCE, 			"Carbon monoxide load resistance",		0,		false,		false,			"Ohms"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_CO_HEAT_CURRENT, 			"Carbon monoxide heat current",			0,		true,		false,			"mA"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_CO_HEAT_SUPPLY_VOLTAGE, 		"Carbon monoxide heat supply voltage",	0,		true,		false,			"mV"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_CO_HEAT_DROP_VOLTAGE, 		"Carbon monoxide heat drop voltage",	0,		true,		false,			"mV"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_CO_LOAD_RESISTANCE, 			"Carbon monoxide load resistance",		0,		true,		false,			"Ohms"},
 		OneSensor {	BOARD_URBAN, 		SENSOR_NO2, 						"Nitrogen dioxide",						15,		true,		true,			"kOhm/ppm"},
 		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_HEAT_TIME, 				"Nitrogen dioxide heat time",			0,		false,		false,			"sec"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_HEAT_CURRENT, 			"Nitrogen dioxide heat current",		0,		false,		false,			"mA"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_HEAT_SUPPLY_VOLTAGE, 	"Nitrogen dioxide heat supply voltage",	0,		false,		false,			"mV"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_HEAT_DROP_VOLTAGE, 		"Nitrogen dioxide heat drop voltage",	0,		false,		false,			"mV"},
-		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_LOAD_RESISTANCE, 		"Nitrogen dioxide load resistance",		0,		false,		false,			"Ohms"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_HEAT_CURRENT, 			"Nitrogen dioxide heat current",		0,		true,		false,			"mA"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_HEAT_SUPPLY_VOLTAGE, 	"Nitrogen dioxide heat supply voltage",	0,		true,		false,			"mV"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_HEAT_DROP_VOLTAGE, 		"Nitrogen dioxide heat drop voltage",	0,		true,		false,			"mV"},
+		OneSensor {	BOARD_URBAN, 		SENSOR_NO2_LOAD_RESISTANCE, 		"Nitrogen dioxide load resistance",		0,		true,		false,			"Ohms"},
 
 		// I2C Auxiliary Sensors
 		// Alphasense Delta board (3 Gas sensor Slots, + SHT31 Temp-Humidity)

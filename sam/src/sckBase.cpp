@@ -2281,6 +2281,7 @@ void SckBase::updateSensors() {
 				if (elapsed >= sensors[wichSensor].interval) {
 					// Time to read sensor!!
 					led.brightnessFactor = 1;
+					led.update(config.mode, 0);
 					if (getReading(wichSensor)) {
 						RAMstore(wichSensor);
 						sprintf(outBuff, " (RAM) + %s: %.2f %s", sensors[wichSensor].title, sensors[wichSensor].reading, sensors[wichSensor].unit);
@@ -2967,7 +2968,7 @@ void SckBase::updatePower() {
 		onUSB = true;
 
 		// Check if we are chanrging the battery
-		if (getVoltage(CHG_CHAN) < 3.0) { 
+		if (getVoltage(CHG_CHAN) < 3.0) {
 			if (!charging) sckOut("Charging battery!");
 			charging = true;
 		} else charging = false;					// In this case battery should be full or not conected
@@ -3031,7 +3032,7 @@ void SckBase::updatePower() {
 
 		// Enter sleep mode
 		} else if (	(closestAction > minSleepPeriod) && 						// Still some time before next action
-					(rtc.getEpoch() - userLastAction > 20) && 					// At least 10 seconds after the las user action (button)
+					(rtc.getEpoch() - userLastAction > 20) && 					// At least 10 seconds after the last user action (button)
 					(config.mode == MODE_SD || config.mode == MODE_NET) && 		// Only in network an sdcard modes
 					!publishRuning) {											// If we are not publishing
 
@@ -3089,19 +3090,18 @@ void SckBase::goToSleep() {
 	}
 	
 	// MICS heaters saving
-
 	uint32_t nextReadingCO = sensors[SENSOR_CO].lastReadingTime + sensors[SENSOR_CO].interval;
 	if (sensors[SENSOR_CO].enabled && (nextReadingCO - rtc.getEpoch() < urban.CO_PREHEATING_TIME)) {		// If next reading is in less than preheating_time turn it on
-		urban.gasOn(SENSOR_CO);
+		if (!urban.gasCOheaterState) urban.gasOn(SENSOR_CO);
 	} else {
-		urban.gasOff(SENSOR_CO);
+		if (urban.gasCOheaterState) urban.gasOff(SENSOR_CO);
 	}
 
 	uint32_t nextReadingNO2 = sensors[SENSOR_NO2].lastReadingTime + sensors[SENSOR_NO2].interval;
 	if (sensors[SENSOR_NO2].enabled && (nextReadingNO2 - rtc.getEpoch() < urban.NO2_PREHEATING_TIME)) {		// If next reading is in less than 10 minutes turn it on
-		urban.gasOn(SENSOR_NO2);
+		if (!urban.gasNO2heaterState) urban.gasOn(SENSOR_NO2);
 	} else {
-		urban.gasOff(SENSOR_NO2);
+		if (urban.gasNO2heaterState) urban.gasOff(SENSOR_NO2);
 	}
 
 	// Power Suply in low power mode

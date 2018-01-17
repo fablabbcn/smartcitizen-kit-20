@@ -800,22 +800,35 @@ void SckESP::webSet() {
 		uint32_t iepoch = tepoch.toInt();
 		const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
 
-		if (iepoch >= DEFAULT_TIME) { 
+		if (iepoch >= DEFAULT_TIME) {
+
+			flashReadFile("/synced.html");
+
+			delay(50);
+
        		setTime(iepoch);
        		espStatus.conf = ESP_CONF_CHANGED_EVENT;
       		debugOUT(F("Time updated from apmode web!!!"));
 
-      		debugOUT(F("Sending time to SAM..."));
-			String epochSTR = String(now());
-			clearParam();
-			epochSTR.toCharArray(msgOut.param, 240);
-			msgOut.com = ESP_GET_TIME_COM;
-			SAMsendMsg();
-
+      		// Send time until they turn us off...
+      		while (true)  {
+	      		debugOUT(F("Sending time to SAM..."));
+				String epochSTR = String(now());
+				clearParam();
+				epochSTR.toCharArray(msgOut.param, 240);
+				msgOut.com = ESP_GET_TIME_COM;
+				SAMsendMsg();
+				delay(50);
+			}
 			json += "\"time\":\"true\",";
+			return;
+
 		} else {
 			debugOUT(F("Invalid time received from apmode web!!!"));
 			json += "\"time\":\"false\",";
+
+			flashReadFile("/sync_error.html");
+			return;
 		}
 
 	} else {
