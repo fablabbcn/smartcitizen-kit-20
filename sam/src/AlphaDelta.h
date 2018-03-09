@@ -67,7 +67,6 @@ class AlphaDelta {
 		float getElectrodeGain(Electrode wichElectrode);
 		double getElectrode(Electrode wichElectrode);
 		uint32_t getUID();
-		uint8_t readConsecutive(uint8_t * dataBuffer, uint8_t startAddress, uint8_t bytes);
 		uint8_t writeByte(uint8_t dataAddress, uint8_t data);
 		uint8_t readByte(uint8_t dataAddress);
 

@@ -28,17 +28,6 @@ bool AlphaDelta::begin() {
 
 float AlphaDelta::getTemperature() {
 
-	SerialUSB.print("UID: ");
-	SerialUSB.println(getUID());
-
-	SerialUSB.println("Write Test... ");
-	uint8_t writed = 5;
-    SerialUSB.println(writeByte(0x14, writed));
-    uint8_t readed = readByte(0x14);
-    SerialUSB.println(readed);
-    if (writed == readed) SerialUSB.println("OK!");
-    else SerialUSB.println("ERROR!!!");
-
 	return sht31.readTemperature();
 }
 
@@ -73,51 +62,37 @@ float AlphaDelta::getElectrodeGain(Electrode wichElectrode) {
 }
 
 uint32_t AlphaDelta::getUID() {
-    uint8_t UIDBytes[4];
-    if(readConsecutive(UIDBytes, 0xFC, 4) != 4){
-        return 0;
+
+    uint8_t byteNum = 4;
+    uint8_t UIDBytes[byteNum];
+
+    Wire.beginTransmission(eepromAddress);
+    Wire.write(0xFC);
+    if (Wire.requestFrom(eepromAddress, byteNum) != byteNum) return 0;
+    for(uint8_t pos=0; pos<byteNum; pos++) {
+            UIDBytes[pos] = Wire.read();
     }
-    uint8_t pos;
+
     uint32_t UID = 0;
-    for(pos = 0; pos < 4; pos++){
+    for (uint8_t pos=0; pos<4; pos++){
         UID <<= 8;
         UID |= UIDBytes[pos];
     }
     return UID;
 }
 
-// TEMP this is ugly!!
-uint8_t AlphaDelta::readConsecutive(uint8_t * dataBuffer, uint8_t startAddress, uint8_t bytes){
-    Wire.beginTransmission(eepromAddress);
-    Wire.write(startAddress);
-    Wire.endTransmission(false);
-    if(Wire.requestFrom(eepromAddress, bytes) != bytes){
-        return 0;
-    } else {
-        uint8_t pos;
-        for(pos = 0; pos < bytes; pos++){
-            dataBuffer[pos] = Wire.read();
-        }
-        return bytes;
-    }
-}
 uint8_t AlphaDelta::writeByte(uint8_t dataAddress, uint8_t data){
     Wire.beginTransmission(eepromAddress);
-    SerialUSB.println(Wire.write(dataAddress));
-    SerialUSB.println(Wire.write(data));
+    Wire.write(dataAddress);
+    Wire.write(data);
     return Wire.endTransmission();
 }
+
 uint8_t AlphaDelta::readByte(uint8_t dataAddress){
     Wire.beginTransmission(eepromAddress);
     Wire.write(dataAddress);
-    if(Wire.endTransmission(false)){
-        // Handle error
-        return 0; // May need value here <------
-    }
-    if(!Wire.requestFrom(eepromAddress, 1)){
-        // Handle error
-        return 0; // May need value here <------
-    }
+    if (Wire.endTransmission(false)) return 0;
+    if(!Wire.requestFrom(eepromAddress, 1)) return 0;
     return Wire.read();
 }
 
