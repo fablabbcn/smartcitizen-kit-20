@@ -8,6 +8,7 @@ WaterTemp_DS18B20 	waterTemp_DS18B20;
 Atlas				atlasPH = Atlas(SENSOR_ATLAS_PH);
 Atlas				atlasEC = Atlas(SENSOR_ATLAS_EC);
 Atlas				atlasDO = Atlas(SENSOR_ATLAS_DO);
+Groove_SHT31 		groove_SHT31;
 
 // Eeprom flash emulation to store I2C address
 // FlashStorage(eepromAuxI2Caddress, Configuration);
@@ -45,6 +46,8 @@ bool AuxBoards::begin(SensorType wichSensor) {
 		case SENSOR_ATLAS_EC_SG: 				return atlasEC.begin(); break;
 		case SENSOR_ATLAS_DO:
 		case SENSOR_ATLAS_DO_SAT: 				return atlasDO.begin(); break;
+		case SENSOR_GROOVE_TEMP_SHT31: 			
+		case SENSOR_GROOVE_HUM_SHT31: 			return groove_SHT31.begin(); break;
 		default: break;
 	}
 
@@ -73,6 +76,8 @@ float AuxBoards::getReading(SensorType wichSensor) {
 		case SENSOR_ATLAS_EC_SG:			return atlasEC.newReadingB; break;
 		case SENSOR_ATLAS_DO:				return atlasDO.newReading; break;
 		case SENSOR_ATLAS_DO_SAT:			return atlasDO.newReadingB; break;
+		case SENSOR_GROOVE_TEMP_SHT31: 		if (groove_SHT31.update()) return groove_SHT31.temperature; break;
+		case SENSOR_GROOVE_HUM_SHT31: 		if (groove_SHT31.update()) return groove_SHT31.humidity; break;
 		default: break;
 	}
 
@@ -589,6 +594,101 @@ uint8_t Atlas::getResponse() {
 			return 2;
 		}
     }
+}
+
+bool Groove_SHT31::begin() {
+
+	Wire.begin();
+
+	if (!I2Cdetect(deviceAddress)) return false;
+	
+	// Send reset command
+	sendComm(SOFT_RESET);
+
+	update();
+
+	return true;
+}
+
+bool Groove_SHT31::update() {
+
+	// If last update was less than 2 sec ago dont do it again
+	if (millis() - lastUpdate < 2000) return true;
+
+	uint8_t readbuffer[6];
+	sendComm(SINGLE_SHOT_HIGH_REP);
+  	
+  	Wire.requestFrom(deviceAddress, (uint8_t)6);
+
+  	// Wait for answer (datasheet says 15ms is the max)
+  	uint32_t started = millis();
+  	while(Wire.available() != 6) {
+  		if (millis() - started > timeout) return 0;
+   	}
+
+  	// Read response
+	for (uint8_t i=0; i<6; i++) readbuffer[i] = Wire.read();
+
+	uint16_t ST, SRH;
+	ST = readbuffer[0];
+	ST <<= 8;
+	ST |= readbuffer[1];
+
+	// Check Temperature crc
+	if (readbuffer[2] != crc8(readbuffer, 2)) return false;
+
+	SRH = readbuffer[3];
+	SRH <<= 8;
+	SRH |= readbuffer[4];
+
+	// check Humidity crc
+	if (readbuffer[5] != crc8(readbuffer+3, 2)) return false;
+
+	double temp = ST;
+	temp *= 175;
+	temp /= 0xffff;
+	temp = -45 + temp;
+	temperature = (float)temp;
+
+	double shum = SRH;
+	shum *= 100;
+	shum /= 0xFFFF;
+	humidity = (float)shum;
+
+	lastUpdate = millis();
+
+	return true;
+}
+
+void Groove_SHT31::sendComm(uint16_t comm) {
+  Wire.beginTransmission(deviceAddress);
+  Wire.write(comm >> 8);
+  Wire.write(comm & 0xFF);
+  Wire.endTransmission();  
+}
+
+uint8_t Groove_SHT31::crc8(const uint8_t *data, int len) {
+
+ /* CRC-8 formula from page 14 of SHT spec pdf
+ *
+ * Test data 0xBE, 0xEF should yield 0x92
+ *
+ * Initialization data 0xFF
+ * Polynomial 0x31 (x8 + x5 +x4 +1)
+ * Final XOR 0x00
+ */
+	const uint8_t POLYNOMIAL(0x31);
+	uint8_t crc(0xFF);
+
+	for ( int j = len; j; --j ) {
+		crc ^= *data++;
+		for ( int i = 8; i; --i ) {
+			crc = ( crc & 0x80 )
+			? (crc << 1) ^ POLYNOMIAL
+			: (crc << 1);
+		}
+	}
+	return crc;
 }
 
 void writeI2C(byte deviceaddress, byte instruction, byte data ) {

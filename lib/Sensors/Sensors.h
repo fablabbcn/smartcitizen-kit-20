@@ -58,6 +58,9 @@ enum SensorType {
 	SENSOR_ATLAS_DO,
 	SENSOR_ATLAS_DO_SAT,
 
+	SENSOR_GROOVE_TEMP_SHT31,
+	SENSOR_GROOVE_HUM_SHT31,
+
 	// Actuators (This is temp)
 	SENSOR_GROOVE_OLED,
 
@@ -166,12 +169,17 @@ public:
 		OneSensor { BOARD_AUX,			SENSOR_INA219_CURRENT,				"INA219 Current",						0,		false,		false,			"mA"},
 		OneSensor { BOARD_AUX,			SENSOR_INA219_LOADVOLT,				"INA219 Load voltage",					0,		false,		false,			"V"},
 
+		// Atlas Scientific probes
 		OneSensor { BOARD_AUX,			SENSOR_WATER_TEMP_DS18B20,			"DS18B20 Water temperature",			42,		false,		false,			"C"},
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_PH,					"Atlas PH",								43,		false,		true,			"pH"},
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_EC,					"Atlas Conductivity",					45,		false,		true,			"uS/cm"},
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_EC_SG,					"Atlas Specific gravity",				46,		false,		true,			},
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_DO,					"Atlas Dissolved Oxygen",				48,		false,		true,			"mg/L"},
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_DO_SAT,				"Atlas DO Saturation",					49,		false,		true,			"%"},
+
+		// Temperature and Humidity Groove - SHT31
+		OneSensor {	BOARD_AUX, 			SENSOR_GROOVE_TEMP_SHT31, 			"Temperature SHT31", 					0,		false,		false,			"C"},
+		OneSensor {	BOARD_AUX, 			SENSOR_GROOVE_HUM_SHT31,			"Humidity SHT31", 						0,		false,		false,			"%"},
 
 		// Later this will be moved to a Actuators.h file
 		// Groove I2C Oled Display 96x96
