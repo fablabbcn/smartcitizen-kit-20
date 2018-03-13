@@ -49,11 +49,11 @@ class AuxBoards {
 			0x61		// SENSOR_ATLAS_DO_SAT,
 		};
 
-		bool begin(SensorType wichSensor);
-		float getReading(SensorType wichSensor);
-		bool getBusyState(SensorType wichSensor);
-		String control(SensorType wichSensor, String command);
-		void print(SensorType wichSensor, String payload);
+		bool begin(OneSensor* wichSensor);
+		float getReading(OneSensor* wichSensor);
+		bool getBusyState(OneSensor* wichSensor);
+		String control(OneSensor* wichSensor, String command);
+		void print(String payload);
 		void displayReading(String title, String reading, String unit, String time);
 
 	private:

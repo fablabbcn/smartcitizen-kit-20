@@ -180,13 +180,13 @@ public:
 	int RAMreadingsIndex = -1;
 	SingleSensorReading RAMreadings[ram_max_readings];
 	uint8_t maxDiffBetweenReadings = minimal_sensor_reading_interval - 5;		// If readings are inside this thime (sec) frame they will be considered simultaneous
-	SensorType retrySensor;
+	OneSensor* retrySensor;
 
-	void enableSensor(SensorType wichSensor);
-	void disableSensor(SensorType wichSensor);
+	void enableSensor(OneSensor* wichSensor);
+	void disableSensor(OneSensor* wichSensor);
 	void updateSensors();
-	bool getReading(SensorType wichSensor);
-	bool RAMstore(SensorType);
+	bool getReading(OneSensor* wichSensor);
+	bool RAMstore(OneSensor* wichSensor);
 	uint32_t closestAction = 0;		// Time to next action (seconds), it could be a sensor reading or a publish action.
 	bool RAMgetGroup(int groupIndex);
 	void publish();
@@ -418,7 +418,7 @@ public:
 	float baudrate = 115200;
 	void inputUpdate();
 	void sckIn(String strIn);
-	SensorType getSensorFromString(String strIn);
+	OneSensor* getSensorFromString(String strIn);
 	enum OutLevels {
 		OUT_SILENT,
 		OUT_NORMAL,

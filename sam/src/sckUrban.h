@@ -18,8 +18,8 @@ public:
 
 	void setup();
 
-	float getReading(SensorType wichSensor);
-	String control(SensorType wichSensor, String command);
+	float getReading(OneSensor* wichSensor);
+	String control(OneSensor* wichSensor, String command);
 
 	// Noise
 	float getNoise();

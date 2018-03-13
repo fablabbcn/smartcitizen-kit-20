@@ -10,9 +10,6 @@ Atlas				atlasEC = Atlas(SENSOR_ATLAS_EC);
 Atlas				atlasDO = Atlas(SENSOR_ATLAS_DO);
 Groove_SHT31 		groove_SHT31;
 
-// Eeprom flash emulation to store I2C address
-// FlashStorage(eepromAuxI2Caddress, Configuration);
-
 bool I2Cdetect(byte address) {
 
 	Wire.beginTransmission(address);
@@ -22,9 +19,8 @@ bool I2Cdetect(byte address) {
 	else return false;
 }
 
-bool AuxBoards::begin(SensorType wichSensor) {
-	
-	switch (wichSensor) {
+bool AuxBoards::begin(OneSensor* wichSensor) {
+	switch (wichSensor->type) {
 
 		case SENSOR_ALPHADELTA_SLOT_1A:
 		case SENSOR_ALPHADELTA_SLOT_1W:
@@ -39,7 +35,7 @@ bool AuxBoards::begin(SensorType wichSensor) {
 		case SENSOR_INA219_SHUNT: 			
 		case SENSOR_INA219_CURRENT: 		
 		case SENSOR_INA219_LOADVOLT: 			return ina219.begin(); break;
-		case SENSOR_GROOVE_OLED: 				return groove_OLED.begin(); break;
+		case SENSOR_GROOVE_OLED: 				wichSensor->interval = 2; return groove_OLED.begin(); break;
 		case SENSOR_WATER_TEMP_DS18B20:			return waterTemp_DS18B20.begin(); break;
 		case SENSOR_ATLAS_PH:					return atlasPH.begin();
 		case SENSOR_ATLAS_EC:
@@ -54,9 +50,9 @@ bool AuxBoards::begin(SensorType wichSensor) {
 	return false;
 }
 
-float AuxBoards::getReading(SensorType wichSensor) {
+float AuxBoards::getReading(OneSensor* wichSensor) {
 	
-	switch (wichSensor) {
+	switch (wichSensor->type) {
 		case SENSOR_ALPHADELTA_SLOT_1A:	 	return alphaDelta.getElectrode(alphaDelta.Slot1.electrode_A); break;
 		case SENSOR_ALPHADELTA_SLOT_1W: 	return alphaDelta.getElectrode(alphaDelta.Slot1.electrode_W); break;
 		case SENSOR_ALPHADELTA_SLOT_2A: 	return alphaDelta.getElectrode(alphaDelta.Slot2.electrode_A); break;
@@ -84,9 +80,9 @@ float AuxBoards::getReading(SensorType wichSensor) {
 	return -9999;
 }
 
-bool AuxBoards::getBusyState(SensorType wichSensor) {
+bool AuxBoards::getBusyState(OneSensor* wichSensor) {
 	
-	switch(wichSensor) {
+	switch(wichSensor->type) {
 		case SENSOR_GROOVE_OLED:	return true; break;
 		case SENSOR_ATLAS_PH: 		return atlasPH.getBusyState(); break;
 		case SENSOR_ATLAS_EC:
@@ -97,9 +93,9 @@ bool AuxBoards::getBusyState(SensorType wichSensor) {
 	}
 }
 
-String AuxBoards::control(SensorType wichSensor, String command) {
-	switch(wichSensor) {
-		case SENSOR_ALPHADELTA_SLOT_1A: 
+String AuxBoards::control(OneSensor* wichSensor, String command) {
+	switch(wichSensor->type) {
+		case SENSOR_ALPHADELTA_SLOT_1A:
 		case SENSOR_ALPHADELTA_SLOT_1W:
 		case SENSOR_ALPHADELTA_SLOT_2A:
 		case SENSOR_ALPHADELTA_SLOT_2W:
@@ -110,7 +106,7 @@ String AuxBoards::control(SensorType wichSensor, String command) {
 
 				Electrode wichElectrode;
 
-				switch(wichSensor) {
+				switch(wichSensor->type) {
 					case SENSOR_ALPHADELTA_SLOT_1A: wichElectrode = alphaDelta.Slot1.electrode_A;
 					case SENSOR_ALPHADELTA_SLOT_1W: wichElectrode = alphaDelta.Slot1.electrode_W;
 					case SENSOR_ALPHADELTA_SLOT_2A: wichElectrode = alphaDelta.Slot2.electrode_A;
@@ -144,9 +140,9 @@ String AuxBoards::control(SensorType wichSensor, String command) {
 
 			Atlas *thisAtlas;
 
-			if (wichSensor == SENSOR_ATLAS_PH) thisAtlas = &atlasPH;
-			else if (wichSensor == SENSOR_ATLAS_EC || wichSensor == SENSOR_ATLAS_EC_SG) thisAtlas = &atlasEC;
-			else if (wichSensor == SENSOR_ATLAS_DO || wichSensor == SENSOR_ATLAS_DO_SAT) thisAtlas = &atlasDO;
+			if (wichSensor->type == SENSOR_ATLAS_PH) thisAtlas = &atlasPH;
+			else if (wichSensor->type == SENSOR_ATLAS_EC || wichSensor->type == SENSOR_ATLAS_EC_SG) thisAtlas = &atlasEC;
+			else if (wichSensor->type == SENSOR_ATLAS_DO || wichSensor->type == SENSOR_ATLAS_DO_SAT) thisAtlas = &atlasDO;
 
 			// 	 Calibration command options:
 			// 		Atlas PH: (https://www.atlas-scientific.com/_files/_datasheets/_circuit/pH_EZO_datasheet.pdf) page 50
@@ -179,7 +175,7 @@ String AuxBoards::control(SensorType wichSensor, String command) {
 	return "Unknown error on control command!!!";
 }
 
-void AuxBoards::print(SensorType wichSensor, String payload) {
+void AuxBoards::print(String payload) {
 
 	groove_OLED.print(payload);
 }
@@ -269,6 +265,8 @@ float INA219::getReading(typeOfReading wichReading) {
 bool Groove_OLED::begin() {
 
 	if (!I2Cdetect(deviceAddress)) return false;
+
+
 
 	U8g2_oled.begin();
 	U8g2_oled.clearDisplay();

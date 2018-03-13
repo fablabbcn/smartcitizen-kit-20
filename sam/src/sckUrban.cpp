@@ -20,9 +20,9 @@ void SckUrban::setup() {
 	gainChange(0);
 };
 
-float SckUrban::getReading(SensorType wichSensor) {
+float SckUrban::getReading(OneSensor* wichSensor) {
 
-	switch (wichSensor) {
+	switch (wichSensor->type) {
 		case SENSOR_NOISE: return getNoise(); break;
 		case SENSOR_HUMIDITY: return getHumidity(); break;
 		case SENSOR_TEMPERATURE: return getTemperature(); break;
@@ -45,17 +45,17 @@ float SckUrban::getReading(SensorType wichSensor) {
 	return -9999;
 }
 
-String SckUrban::control(SensorType wichSensor, String command) {
-	 switch (wichSensor) {
+String SckUrban::control(OneSensor* wichSensor, String command) {
+	 switch (wichSensor->type) {
 		case SENSOR_NO2:
 		case SENSOR_CO: {
 
 			if (command.startsWith("set on")) {
-				gasOn(wichSensor);
+				gasOn(wichSensor->type);
 				return F("Starting sensor...");
 
 			} else if (command.startsWith("set off")) {
-				gasOff(wichSensor);
+				gasOff(wichSensor->type);
 				return F("Shuting off heater...");
 
 			// This value should be saved to eeprom
@@ -63,19 +63,19 @@ String SckUrban::control(SensorType wichSensor, String command) {
 				command.replace("set current", "");
 				command.trim();
 				int wichValue = command.toInt();
-				gasHeat(wichSensor, wichValue);
-				return String F("Setting current to: ") + String(wichValue) + F(" mA\n\rActual value: ") + String(gasGetHeaterCurrent(wichSensor)) + F(" mA");
+				gasHeat(wichSensor->type, wichValue);
+				return String F("Setting current to: ") + String(wichValue) + F(" mA\n\rActual value: ") + String(gasGetHeaterCurrent(wichSensor->type)) + F(" mA");
 
 			} else if (command.startsWith("set voltage")) {
 				command.replace("set voltage", "");
 				command.trim();
 				int wichValue = command.toInt();
-				gasSetRegulatorVoltage(wichSensor, wichValue);
-				return String F("Setting heater voltage to: ") + String(wichValue) + F(" mV\n\rActual value: ") + String(gasGetRegulatorVoltage(wichSensor)) + F(" mV");
+				gasSetRegulatorVoltage(wichSensor->type, wichValue);
+				return String F("Setting heater voltage to: ") + String(wichValue) + F(" mV\n\rActual value: ") + String(gasGetRegulatorVoltage(wichSensor->type)) + F(" mV");
 
 			} else if (command.startsWith("correct current")) {
-				gasCorrectHeaterCurrent(wichSensor);
-				return String F("Actual value: ") + String(gasGetHeaterCurrent(wichSensor)) + F(" mA\n\rCorrecting current\n\rActual value: ") + String(gasGetHeaterCurrent(wichSensor)) + F(" mA");
+				gasCorrectHeaterCurrent(wichSensor->type);
+				return String F("Actual value: ") + String(gasGetHeaterCurrent(wichSensor->type)) + F(" mA\n\rCorrecting current\n\rActual value: ") + String(gasGetHeaterCurrent(wichSensor->type)) + F(" mA");
 
 			} else if (command.startsWith("help")) {
 				return F("Available commands for this sensor:\n\r* set on - set off\n\r* set current\n\r* set voltage");
