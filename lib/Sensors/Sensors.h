@@ -58,6 +58,10 @@ enum SensorType {
 	SENSOR_ATLAS_DO,
 	SENSOR_ATLAS_DO_SAT,
 
+	SENSOR_CHIRP_MOISTURE,
+	SENSOR_CHIRP_TEMPERATURE,
+	SENSOR_CHIRP_LIGHT,
+
 	SENSOR_GROOVE_TEMP_SHT31,
 	SENSOR_GROOVE_HUM_SHT31,
 
@@ -176,6 +180,12 @@ public:
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_EC_SG,					"Atlas Specific gravity",				46,		false,		true,			},
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_DO,					"Atlas Dissolved Oxygen",				48,		false,		true,			"mg/L"},
 		OneSensor { BOARD_AUX,			SENSOR_ATLAS_DO_SAT,				"Atlas DO Saturation",					49,		false,		true,			"%"},
+
+		// I2C Moisture Sensor (chirp)
+		// https://github.com/Miceuz/i2c-moisture-sensor
+		OneSensor { BOARD_AUX, 			SENSOR_CHIRP_MOISTURE,				"Soil Moisture",						0,		false,		true,			},
+		OneSensor { BOARD_AUX, 			SENSOR_CHIRP_TEMPERATURE,			"Soil Temperature",						0,		false,		true,			"C"},
+		OneSensor { BOARD_AUX, 			SENSOR_CHIRP_LIGHT, 				"Soil Light", 							0, 		false, 		true, 			},
 
 		// Temperature and Humidity Groove - SHT31
 		OneSensor {	BOARD_AUX, 			SENSOR_GROOVE_TEMP_SHT31, 			"Temperature SHT31", 					0,		false,		false,			"C"},

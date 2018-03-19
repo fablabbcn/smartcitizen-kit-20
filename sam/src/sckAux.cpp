@@ -8,6 +8,7 @@ WaterTemp_DS18B20 	waterTemp_DS18B20;
 Atlas				atlasPH = Atlas(SENSOR_ATLAS_PH);
 Atlas				atlasEC = Atlas(SENSOR_ATLAS_EC);
 Atlas				atlasDO = Atlas(SENSOR_ATLAS_DO);
+Moisture 			moistureChirp;
 Groove_SHT31 		groove_SHT31;
 
 bool I2Cdetect(byte address) {
@@ -42,6 +43,9 @@ bool AuxBoards::begin(OneSensor* wichSensor) {
 		case SENSOR_ATLAS_EC_SG: 				return atlasEC.begin(); break;
 		case SENSOR_ATLAS_DO:
 		case SENSOR_ATLAS_DO_SAT: 				return atlasDO.begin(); break;
+		case SENSOR_CHIRP_TEMPERATURE:
+		case SENSOR_CHIRP_LIGHT:
+		case SENSOR_CHIRP_MOISTURE:				return moistureChirp.begin(); break;
 		case SENSOR_GROOVE_TEMP_SHT31: 			
 		case SENSOR_GROOVE_HUM_SHT31: 			return groove_SHT31.begin(); break;
 		default: break;
@@ -72,6 +76,9 @@ float AuxBoards::getReading(OneSensor* wichSensor) {
 		case SENSOR_ATLAS_EC_SG:			return atlasEC.newReadingB; break;
 		case SENSOR_ATLAS_DO:				return atlasDO.newReading; break;
 		case SENSOR_ATLAS_DO_SAT:			return atlasDO.newReadingB; break;
+		case SENSOR_CHIRP_MOISTURE:			return moistureChirp.getReading(moistureChirp.CHIRP_MOISTURE); break;
+		case SENSOR_CHIRP_TEMPERATURE:		return moistureChirp.getReading(moistureChirp.CHIRP_TEMPERATURE); break;
+		case SENSOR_CHIRP_LIGHT:			return moistureChirp.getReading(moistureChirp.CHIRP_LIGHT); break;
 		case SENSOR_GROOVE_TEMP_SHT31: 		if (groove_SHT31.update()) return groove_SHT31.temperature; break;
 		case SENSOR_GROOVE_HUM_SHT31: 		if (groove_SHT31.update()) return groove_SHT31.humidity; break;
 		default: break;
@@ -89,6 +96,9 @@ bool AuxBoards::getBusyState(OneSensor* wichSensor) {
 		case SENSOR_ATLAS_EC_SG: 	return atlasEC.getBusyState(); break;
 		case SENSOR_ATLAS_DO:
 		case SENSOR_ATLAS_DO_SAT: 	return atlasDO.getBusyState(); break;
+		case SENSOR_CHIRP_MOISTURE:		return moistureChirp.getBusyState(moistureChirp.CHIRP_MOISTURE); break;
+		case SENSOR_CHIRP_TEMPERATURE:	return moistureChirp.getBusyState(moistureChirp.CHIRP_TEMPERATURE); break;
+		case SENSOR_CHIRP_LIGHT: 	return moistureChirp.getBusyState(moistureChirp.CHIRP_LIGHT); break;
 		default: return false; break;
 	}
 }
@@ -168,6 +178,18 @@ String AuxBoards::control(OneSensor* wichSensor, String command) {
 				else return String(responseCode);
 
 			}
+			break;
+
+		} case SENSOR_CHIRP_LIGHT:
+		case SENSOR_CHIRP_TEMPERATURE:
+		case SENSOR_CHIRP_MOISTURE: {
+
+			if (command.startsWith("get ver")) {
+
+				return String(moistureChirp.getVersion());
+
+			} else if (command.startsWith("help")) return F("Available commands for this sensor:\n\r* get ver");
+			else return F("Unrecognized command!! please try again...");
 			break;
 
 		} default: return "Unrecognized sensor!!!";
@@ -590,6 +612,75 @@ uint8_t Atlas::getResponse() {
 			return 2;
 		}
     }
+}
+
+bool Moisture::begin() {
+
+	if (!I2Cdetect(deviceAddress)) return false;
+	if (alreadyStarted) return true;
+
+	chirp.begin();
+
+	alreadyStarted = true;
+	return true;
+}
+
+float Moisture::getReading(typeOfReading wichReading) {
+
+	switch(wichReading) {
+		case CHIRP_MOISTURE: {
+
+			return chirp.getCapacitance();
+			break;
+
+		} case CHIRP_TEMPERATURE: {
+
+			return chirp.getTemperature() / 10.0;
+			break;
+
+		} case CHIRP_LIGHT: {
+
+			measuringLight = false;
+			return chirp.getLight(false);
+			break;
+
+		} default: break;
+	}
+
+	return 0;
+}
+
+bool Moisture::getBusyState(typeOfReading wichReading) {
+
+	if (chirp.isBusy()) return true;		
+	
+	if (wichReading == CHIRP_LIGHT) {
+
+		if (measuringLight) {
+
+			if (millis() - lightStarted < 3000) return true;
+
+		} else {
+
+			chirp.startMeasureLight();
+			lightStarted = millis();
+			measuringLight = true;
+			return true;
+
+		}
+	} 
+
+	return false;
+}
+
+uint8_t Moisture::getVersion() {
+
+	return chirp.getVersion();
+}
+
+void Moisture::sleep() {
+
+	chirp.sleep();
 }
 
 bool Groove_SHT31::begin() {
