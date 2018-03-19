@@ -52,6 +52,14 @@ class AuxBoards {
 			0x20, 		// SENSOR_MOISTURE_CHIRP
 			0x44,		// SENSOR_GROOVE_TEMP_SHT31,
 			0x44,		// SENSOR_GROOVE_HUM_SHT31,
+			0x70,		// SENSOR_I2C_EXPANDER_TCA9548A,
+			// 0x71,		// SENSOR_I2C_EXPANDER_TCA9548A,
+			// 0x72,		// SENSOR_I2C_EXPANDER_TCA9548A,
+			// 0x73,		// SENSOR_I2C_EXPANDER_TCA9548A,
+			// 0x74,		// SENSOR_I2C_EXPANDER_TCA9548A,
+			// 0x75,		// SENSOR_I2C_EXPANDER_TCA9548A,
+			// 0x76,		// SENSOR_I2C_EXPANDER_TCA9548A,
+			// 0x77,		// SENSOR_I2C_EXPANDER_TCA9548A,
 			0x3c		// SENSOR_GROOVE_OLED,
 		};
 
@@ -352,6 +360,30 @@ class Groove_SHT31 {
 		float humidity;
 		bool begin();
 		bool update();
+};
+
+class I2Cexp_TCA9548A {
+private:
+	struct Devices {
+		byte address;
+		bool present;
+	};
+	Devices devices[8] = {
+		{0x70, 0},
+		{0x71, 0},
+		{0x72, 0},
+		{0x73, 0},
+		{0x74, 0},
+		{0x75, 0},
+		{0x76, 0},
+		{0x77, 0},
+	};
+
+public:
+	bool detected = false;
+	bool begin();
+	bool selectPort(uint8_t wichMuxPort);
+	bool disable();
 };
 
 void writeI2C(byte deviceAddress, byte instruction, byte data);
