@@ -238,7 +238,6 @@ void SckBase::update() {
 								config.publishInterval = receivedInterval;
 								sckOut(String F("New reading interval: ") + String(config.publishInterval));
 							}
-
 						}
 					}
 					if (lightResults.lines[0].endsWith(F("time"))) setTime(lightResults.lines[1]);
@@ -414,7 +413,6 @@ bool SckBase::loadSDconfig() {
 			lineBuff.replace("\n", "");
 			lineBuff.replace("\r", "");
 			lineBuff.trim();
-
 
 			// Ignore comments on text file
 			if (!lineBuff.startsWith("#") && lineBuff.length() > 0) {
@@ -1806,8 +1804,6 @@ void SckBase::sckIn(String strIn) {
 				sprintf(outBuff, "%u readings stored in RAM (max:%u)", RAMreadingsIndex + 1, ram_max_readings);
 				sckOut();
 			} else sckOut("No readings stored in RAM");
-
-
 			break;
 
 		} case EXTCOM_RAM_READ: {
@@ -1868,9 +1864,7 @@ void SckBase::sckIn(String strIn) {
 				float readedOhms = readResistor(0);
 				sprintf(outBuff, "Actual resitor value: %.2f Ohms", readedOhms);
 				sckOut();
-
 			}
-
 			break;
 
 		} case EXTCOM_ENABLE_SENSOR: {
@@ -1882,7 +1876,6 @@ void SckBase::sckIn(String strIn) {
 			OneSensor *wichSensor = getSensorFromString(strIn);
 
 			if (wichSensor->type < SENSOR_COUNT) enableSensor(wichSensor);
-
 			break;
 
 		} case EXTCOM_DISABLE_SENSOR: {
@@ -1894,7 +1887,6 @@ void SckBase::sckIn(String strIn) {
 			OneSensor *wichSensor = getSensorFromString(strIn);
 
 			if (wichSensor->type < SENSOR_COUNT) disableSensor(wichSensor);
-
 			break;
 
 		} case EXTCOM_SET_INTERVAL_SENSOR: {
@@ -2007,6 +1999,7 @@ void SckBase::sckIn(String strIn) {
 
 			sprintf(outBuff, "\r\nDisabled\r\n----------");
 			sckOut();
+			// Get sensor type
 			for (uint8_t i=0; i<SENSOR_COUNT; i++) {
 				thisType = static_cast<SensorType>(i);
 

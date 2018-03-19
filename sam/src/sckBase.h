@@ -452,7 +452,7 @@ public:
 	BUS_Serial BUS_queue[8];
 	const uint16_t answerTimeout = 250;
 	int BUS_queueCount = 0;
-	bool espSerialDebug = true;
+	bool espSerialDebug = false;
 	float espLastOn;
 	float espTotalOnTime = 0;
 	bool espConsole = false;

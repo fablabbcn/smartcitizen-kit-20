@@ -46,6 +46,7 @@ float SckUrban::getReading(OneSensor* wichSensor) {
 }
 
 String SckUrban::control(OneSensor* wichSensor, String command) {
+	 
 	 switch (wichSensor->type) {
 		case SENSOR_NO2:
 		case SENSOR_CO: {

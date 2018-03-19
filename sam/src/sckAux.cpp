@@ -266,8 +266,6 @@ bool Groove_OLED::begin() {
 
 	if (!I2Cdetect(deviceAddress)) return false;
 
-
-
 	U8g2_oled.begin();
 	U8g2_oled.clearDisplay();
 	
@@ -707,3 +705,4 @@ byte readI2C(byte deviceaddress, byte instruction) {
   data = Wire.read();
   return data;
 }
+

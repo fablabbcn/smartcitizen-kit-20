@@ -41,12 +41,12 @@ class AuxBoards {
 			0x41,		// SENSOR_INA219_CURRENT,
 			0x41,		// SENSOR_INA219_LOADVOLT,
 			0x18,		// SENSOR_WATER_TEMP_DS18B20,
-			0x3c,		// SENSOR_GROOVE_OLED,
 			0x63,		// SENSOR_ATLAS_PH,
 			0x64,		// SENSOR_ATLAS_EC,
 			0x64,		// SENSOR_ATLAS_EC_SG,
 			0x61,		// SENSOR_ATLAS_DO,
-			0x61		// SENSOR_ATLAS_DO_SAT,
+			0x61,		// SENSOR_ATLAS_DO_SAT,
+			0x3c		// SENSOR_GROOVE_OLED,
 		};
 
 		bool begin(OneSensor* wichSensor);
@@ -222,7 +222,7 @@ class WaterTemp_DS18B20 {
 		byte data[8];
 		byte addr[8];
 
-		uint8_t conf =0x05;
+		uint8_t conf = 0x05;
 
 		/**
 		 * Start the transmission of data for the DS18B20 trough the DS2482_100 bridge
