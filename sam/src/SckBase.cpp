@@ -117,14 +117,7 @@ void SckBase::setup()
 	// Urban board
 	analogReadResolution(12);
 	if (urban.setup(this)) {
-		sckOut("Urban board detected\r\nSearching for PM sensor...", PRIO_MED, false);
-		if (!urban.start(SENSOR_PM_1)) {
-			sckOut("nothing found!!!");
-			disableSensor(SENSOR_PM_1);
-		} else {
-			sckOut("found it!!!");
-			enableSensor(SENSOR_PM_1);
-		}
+		sckOut("Urban board detected", PRIO_MED, false);
 		urbanPresent = true;
 		readLight.setup();
 	} else {
