@@ -149,7 +149,7 @@ class SckBase
 		void flashSelect();
 
 		// Power
-		uint16_t battCapacity = 2000;
+		uint16_t battCapacity = 6000;
 		bool batteryPresent = false;
 		bool onUSB = true;		
 		uint8_t battAdress = 0x55;
