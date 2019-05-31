@@ -1,6 +1,7 @@
 # Smart Citizen Kit 2.1 
 [![Travis](https://travis-ci.org/fablabbcn/smartcitizen-kit-20.svg?branch=master)](https://travis-ci.org/fablabbcn/smartcitizen-kit-20)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)][![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffablabbcn%2Fsmartcitizen-kit-20.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffablabbcn%2Fsmartcitizen-kit-20?ref=badge_shield)
+()
 [![DOI](https://zenodo.org/badge/109865611.svg)](https://zenodo.org/badge/latestdoi/109865611)
 
 [Click here for version 2.0](https://github.com/fablabbcn/smartcitizen-kit-20/tree/2.0)
@@ -107,6 +108,9 @@ Full documentation under development. Follow the [forum](https://forum.smartciti
 ## License
 
 All the software unless stated is released under [GNU GPL v3.0](https://github.com/fablabbcn/smartcitizen-kit-20/blob/master/LICENSE) and the hardware design files under [CERN OHL v1.2](https://github.com/fablabbcn/smartcitizen-kit-20/blob/master/hardware/LICENSE)
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ffablabbcn%2Fsmartcitizen-kit-20.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Ffablabbcn%2Fsmartcitizen-kit-20?ref=badge_large)
 
 ## Funding
 
