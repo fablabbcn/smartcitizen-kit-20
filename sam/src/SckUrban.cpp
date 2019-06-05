@@ -9,7 +9,7 @@ void SERCOM5_Handler() {
 
 bool SckUrban::setup()
 {
-	if (!sck_bh1721fvc.start()) return false;
+	if (!sck_bh1730fvc.start()) return false;
 	if (!sck_sht31.start()) return false;
 	if (!sck_noise.start()) return false;
 	if (!sck_mpl3115A2.start()) return false;
@@ -22,7 +22,7 @@ bool SckUrban::start(SensorType wichSensor)
 {
 	// TODO find a way to manage MICS start and stop time without pasing time as a parameter
 	switch(wichSensor) {
-		case SENSOR_LIGHT: 				if (sck_bh1721fvc.start()) return true; break;
+		case SENSOR_LIGHT: 				if (sck_bh1730fvc.start()) return true; break;
 		case SENSOR_TEMPERATURE:
 		case SENSOR_HUMIDITY: 				if (sck_sht31.start()) return true; break;
 		case SENSOR_CO_RESISTANCE:
@@ -62,7 +62,7 @@ bool SckUrban::stop(SensorType wichSensor)
 
 	// TODO find a way to manage MICS start and stop time without pasing time as a parameter
 	switch(wichSensor) {
-		case SENSOR_LIGHT: 				if (sck_bh1721fvc.stop()) return true; break;
+		case SENSOR_LIGHT: 				if (sck_bh1730fvc.stop()) return true; break;
 		case SENSOR_TEMPERATURE:
 		case SENSOR_HUMIDITY: 				if (sck_sht31.stop()) return true; break;
 		case SENSOR_CO_RESISTANCE:
@@ -102,7 +102,7 @@ void SckUrban::getReading(SckBase *base, OneSensor *wichSensor)
 {
 	wichSensor->state = 0;
 	switch(wichSensor->type) {
-		case SENSOR_LIGHT:			if (sck_bh1721fvc.get()) 			{ wichSensor->reading = String(sck_bh1721fvc.reading); return; } break;
+		case SENSOR_LIGHT:			if (sck_bh1730fvc.get()) 			{ wichSensor->reading = String(sck_bh1730fvc.reading); return; } break;
 		case SENSOR_TEMPERATURE: 		if (sck_sht31.update()) 			{ wichSensor->reading = String(sck_sht31.temperature); return; } break;
 		case SENSOR_HUMIDITY: 			if (sck_sht31.update()) 			{ wichSensor->reading = String(sck_sht31.humidity); return; } break;
 		case SENSOR_CO_RESISTANCE: 		if (sck_mics4514.getCOresistance())		{ wichSensor->reading = String(sck_mics4514.coResistance); return; } break;
@@ -175,16 +175,16 @@ bool SckUrban::control(SckBase *base, SensorType wichSensor, String command)
 }
 
 // Light
-bool Sck_BH1721FVC::start()
+bool Sck_BH1730FVC::start()
 {
 	if (!I2Cdetect(&Wire, address)) return false;
 	return true;
 }
-bool Sck_BH1721FVC::stop()
+bool Sck_BH1730FVC::stop()
 {
 	return true;
 }
-bool Sck_BH1721FVC::get()
+bool Sck_BH1730FVC::get()
 {
 
 	// Datasheet http://rohmfs.rohm.com/en/products/databook/datasheet/ic/sensor/light/bh1730fvc-e.pdf
