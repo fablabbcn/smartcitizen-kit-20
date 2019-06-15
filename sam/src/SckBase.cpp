@@ -714,6 +714,7 @@ void SckBase::loadConfig()
 	st.tokenSet = config.token.set;
 	st.tokenError = false;
 	st.mode = config.mode;
+	led.dim = config.dimled;
 
 	// CSS vocs sensor baseline loading
 	if (config.extra.ccsBaselineValid && I2Cdetect(&Wire, urban.sck_ccs811.address)) {
@@ -743,6 +744,7 @@ void SckBase::saveConfig(bool defaults)
 			config.sensors[i].enabled = sensors[static_cast<SensorType>(i)].defaultEnabled;
 			config.sensors[i].everyNint = 1;
 		}
+		config.dimled = 1.0;
 		pendingSyncConfig = true;
 	} else {
 		for (uint8_t i=0; i<SENSOR_COUNT; i++) {
@@ -762,6 +764,7 @@ void SckBase::saveConfig(bool defaults)
 	st.wifiStat.reset();
 	lastPublishTime = rtc.getEpoch() - config.publishInterval;
 	lastSensorUpdate = rtc.getEpoch() - config.readInterval;
+	led.dim = config.dimled;
 
 	if (st.wifiSet || st.tokenSet) pendingSyncConfig = true;
 
