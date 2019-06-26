@@ -327,7 +327,7 @@ void SckBase::reviewState()
 			return;
 		}
 
-		if (st.helloPending || !st.timeStat.ok || (timeToPublish  && readingsList.countGroups() > 0) || !infoPublished) {
+		if (st.helloPending || !st.timeStat.ok || timeToPublish || !infoPublished) {
 
 			if (!st.wifiStat.ok) {
 
@@ -439,6 +439,8 @@ void SckBase::reviewState()
 					} else if (readingsList.countGroups() > 0) {
 
 						if (st.publishStat.retry()) netPublish();
+					} else {
+						updateSensors();
 					}
 				}
 			}
@@ -446,6 +448,7 @@ void SckBase::reviewState()
 
 
 			while ( 	!charger.onUSB && 					// No USB connected
+					!timeToPublish && 					// No need to publish
 					pendingSensors <= 0 && 					// No sensor to wait to
 					millis() - lastUserEvent > waitAfterLastEvent) { 	// No recent user interaction (button, sdcard or USB events)
 
@@ -461,6 +464,7 @@ void SckBase::reviewState()
 				updatePower();
 			}
 
+			led.update(led.BLUE, led.PULSE_SOFT);
 			updateSensors();
 			if (readingsList.countGroups() > 0) sdPublish();
 
@@ -598,6 +602,7 @@ void SckBase::printState()
 	sprintf(outBuff, "%s\r\npublishOK: %s\r\n", outBuff, st.publishStat.ok ? t : f);
 	sprintf(outBuff, "%spublishError: %s\r\n", outBuff, st.publishStat.error ? t : f);
 	sprintf(outBuff, "%s\r\ntime to next publish: %li\r\n", outBuff, config.publishInterval - (rtc.getEpoch() - lastPublishTime));
+	sprintf(outBuff, "%s\r\ntimeToPublish: %s\r\n", outBuff, timeToPublish ? t : f);
 
 	sckOut(PRIO_HIGH, false);
 }
