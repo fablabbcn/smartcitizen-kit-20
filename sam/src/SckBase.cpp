@@ -450,6 +450,7 @@ void SckBase::reviewState()
 			while ( 	!charger.onUSB && 					// No USB connected
 					!timeToPublish && 					// No need to publish
 					pendingSensors <= 0 && 					// No sensor to wait to
+					st.timeStat.ok && 					// RTC is synced and working
 					millis() - lastUserEvent > waitAfterLastEvent) { 	// No recent user interaction (button, sdcard or USB events)
 
 
@@ -530,6 +531,7 @@ void SckBase::reviewState()
 			while ( 	!charger.onUSB && 					// No USB connected
 					!timeToPublish && 					// No need to publish
 					pendingSensors <= 0 && 					// No sensor to wait to
+					st.timeStat.ok && 					// RTC is synced and working
 					millis() - lastUserEvent > waitAfterLastEvent) { 	// No recent user interaction (button, sdcard or USB events)
 
 
