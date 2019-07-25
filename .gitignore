@@ -2,7 +2,8 @@
 mock-api/*.png
 npm-debug.log
 bin/
-inventory*
+inventory.csv
+inventory.csv.BAK
 
 # MAC stuff
 */.DS_Store
