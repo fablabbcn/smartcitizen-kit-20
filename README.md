@@ -5,6 +5,8 @@
 
 ![](https://live.staticflickr.com/4781/39073627230_8aee10a859_k.jpg)
 
+## Maybe you are looking for the [SCK 2.1 repository](https://github.com/fablabbcn/smartcitizen-kit-21)
+
 The **SCK 2.0** was the development version for the now commercially available [SCK 2.1](https://github.com/fablabbcn/smartcitizen-kit-21)
 
 ## Documentation
