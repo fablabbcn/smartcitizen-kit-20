@@ -1984,7 +1984,8 @@ bool SckBase::setTime(String epoch)
 {
 	uint32_t wasOn = rtc.getEpoch() - espStarted;
 	rtc.setEpoch(epoch.toInt());
-	if (abs(rtc.getEpoch() - epoch.toInt()) < 2) {
+	int32_t diff = rtc.getEpoch() - epoch.toInt();
+	if (abs(diff) < 2) {
 		timeSyncAfterBoot = true;
 		st.timeStat.setOk();
 		if (urbanPresent) {
