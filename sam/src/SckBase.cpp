@@ -1988,8 +1988,9 @@ bool SckBase::sdPublish()
 			if (st.mode == MODE_SD) {
 				for (uint8_t i=0; i<counter; i++) readingsList.delLastGroup();
 			}
-			return true;
 		}
+		return true;
+
 	} else  {
 		st.cardPresent = false;
 		st.cardPresentError = false;
