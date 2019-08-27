@@ -16,7 +16,6 @@ Sck_DallasTemp 		dallasTemp;
 Sck_SHT31 		sht31 = Sck_SHT31(&auxWire);
 Sck_Range 		range;
 Sck_BME680 		bme680;
-Sck_CCS811 		ccs811;
 
 // Eeprom flash emulation to store I2C address
 FlashStorage(eepromAuxData, EepromAuxData);
@@ -101,8 +100,6 @@ bool AuxBoards::start(SensorType wichSensor)
 		case SENSOR_BME680_HUMIDITY:		return bme680.start(); break;
 		case SENSOR_BME680_PRESSURE:		return bme680.start(); break;
 		case SENSOR_BME680_VOCS:		return bme680.start(); break;
-		case SENSOR_CCS811_VOCS:		return ccs811.start(); break;
-		case SENSOR_CCS811_ECO2: 		return ccs811.start(); break;
 		default: break;
 	}
 
@@ -173,8 +170,6 @@ bool AuxBoards::stop(SensorType wichSensor)
 		case SENSOR_BME680_HUMIDITY:		return bme680.stop(); break;
 		case SENSOR_BME680_PRESSURE:		return bme680.stop(); break;
 		case SENSOR_BME680_VOCS:		return bme680.stop(); break;
-		case SENSOR_CCS811_VOCS:		return ccs811.stop(); break;
-		case SENSOR_CCS811_ECO2:		return ccs811.stop(); break;
 		default: break;
 	}
 
@@ -246,8 +241,6 @@ void AuxBoards::getReading(OneSensor *wichSensor)
 		case SENSOR_BME680_HUMIDITY:		if (bme680.getReading()) 			{ wichSensor->reading = String(bme680.humidity); return; } break;
 		case SENSOR_BME680_PRESSURE:		if (bme680.getReading()) 			{ wichSensor->reading = String(bme680.pressure); return; } break;
 		case SENSOR_BME680_VOCS:		if (bme680.getReading()) 			{ wichSensor->reading = String(bme680.VOCgas); return; } break;
-		case SENSOR_CCS811_VOCS:		if (ccs811.getReading(base)); 			{ wichSensor->reading = String(ccs811.VOCgas); return; } break;
-		case SENSOR_CCS811_ECO2:		if (ccs811.getReading(base)); 			{ wichSensor->reading = String(ccs811.ECO2gas); return; } break;
 		default: break;
 	}
 
@@ -459,14 +452,6 @@ String AuxBoards::control(SensorType wichSensor, String command)
 
 			}
 			break;
-		} case SENSOR_CCS811_VOCS:
-		case SENSOR_CCS811_ECO2: {
-
-			if (command.startsWith("compensate")) {
-				ccs811.compensate = !ccs811.compensate;
-				return (ccs811.compensate ? "True" : "False");
-			}
-
 		} default: return "Unrecognized sensor!!!"; break;
 	}
 	return "Unknown error on control command!!!";
@@ -1305,46 +1290,6 @@ bool Sck_BME680::getReading()
 	return true;
 }
 
-bool Sck_CCS811::start()
-{
-	if (alreadyStarted) return true;
-
-	if (ccs.begin() != CCS811Core::SENSOR_SUCCESS) return false;
-
-	alreadyStarted = true;
-	return true;
-}
-
-bool Sck_CCS811::stop()
-{
-
-	return true;
-}
-
-bool Sck_CCS811::getReading(SckBase *base)
-{
-	if (!ccs.dataAvailable()) return false;
-
-	ccs.readAlgorithmResults();
-
-	VOCgas = ccs.getTVOC();
-	ECO2gas = ccs.getCO2();
-
-	if (compensate) {
-		OneSensor *tempSensor = &(base->sensors[static_cast<SensorType>(SENSOR_TEMPERATURE)]);
-		OneSensor *humSensor = &(base->sensors[static_cast<SensorType>(SENSOR_HUMIDITY)]);
-		if (base->sensors[SENSOR_TEMPERATURE].enabled && base->sensors[SENSOR_HUMIDITY].enabled) {
-			// TODO debuiggerar el resato de los errores de compilacion
-			// TODO terminar el cerry pick de Updated getReading functions to use sensor.state property
-			base->getReading(humSensor);
-			base->getReading(tempSensor);
-			if (base->sensors[SENSOR_HUMIDITY].state == 0 && base->sensors[SENSOR_TEMPERATURE].state == 0 ) {
-				ccs.setEnvironmentalData(base->sensors[SENSOR_HUMIDITY].reading.toFloat(), base->sensors[SENSOR_TEMPERATURE].reading.toFloat());
-			}
-		}
-	}
-	return true;
-}
 
 void writeI2C(byte deviceaddress, byte instruction, byte data )
 {
