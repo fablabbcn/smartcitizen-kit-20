@@ -162,11 +162,6 @@ bool SckList::saveLastGroup()
 
 	lastGroupRightIndex = index;
 
-	// Save power until the next group of readings is stored
-	if (usingFlash) {
-		if (flash.powerDown()) flashSleeping = true;
-	}
-
 	return true;
 }
 bool SckList::lastGroupIsOpen()
@@ -372,18 +367,17 @@ int8_t SckList::getFlag(uint32_t wichGroup, GroupFlags wichFlag)
 }
 void SckList::flashStart()
 {
-	flashSelect();
+	digitalWrite(pinCS_SDCARD, HIGH);	// disables SDcard
+	digitalWrite(pinCS_FLASH, LOW);
 	flash.begin();
 	flash.setClock(133000);
 	flashStarted = true;
-
-	if (flash.powerDown()) flashSleeping = true;
 }
 void SckList::flashSelect()
 {
 	digitalWrite(pinCS_SDCARD, HIGH);	// disables SDcard
 	digitalWrite(pinCS_FLASH, LOW);
-	if (flashSleeping) flash.powerUp();
+	if (!flashStarted) flashStart();
 }
 void SckList::migrateToFlash()
 {
@@ -394,4 +388,26 @@ void SckList::migrateToFlash()
 void SckList::debugOut(const char *text)
 {
 	if (debug) SerialUSB.println(text);
+}
+uint32_t SckList::getFlashCapacity()
+{
+	if (!flashStarted) flashStart();
+
+	flashSelect();
+	return flash.getCapacity();
+}
+bool SckList::testFlash()
+{
+	flashSelect();
+
+	String writeSRT = "testing the flash!";
+	uint32_t fAddress = flash.getAddress(flash.sizeofStr(writeSRT));
+
+	flash.writeStr(fAddress, writeSRT);
+
+	String readSTR;
+	flash.readStr(fAddress, readSTR);
+
+	if (!readSTR.equals(writeSRT)) return false;
+	return true;
 }

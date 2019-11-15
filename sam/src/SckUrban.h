@@ -14,7 +14,7 @@
 // Firmware for SmartCitizen Kit - Urban Sensor Board SCK 2.0
 // It includes drivers for this sensors:
 //
-// * Light - BH1721 -> (0x29)
+// * Light - BH1730FVC -> (0x29)
 // * Temperature and Humidity - SHT31 -> (0x44)
 // * CO and NO2 - MICS4515	
 //      digital POT -> 0x2F
@@ -38,18 +38,30 @@ enum SensorState
 };
 
 // Light
-class Sck_BH1721FVC
+class Sck_BH1730FVC
 {
 	// Datasheet
-	// http://rohmfs.rohm.com/en/products/databook/datasheet/ic/sensor/light/bh1721fvc-e.pdf
+	// https://www.mouser.es/datasheet/2/348/bh1730fvc-e-1018573.pdf
 
 	private:
-		bool sendCommand(byte wichCommand);
-		byte readRegister(byte wichRegister);
+		bool updateValues();
+		
+		// Config values
+		uint8_t ITIME; 			// Integration Time (datasheet page 9)
+		float ITIME_ms;
+		const uint8_t ITIME_max = 252;
+		const uint8_t ITIME_min = 1;
+		const uint16_t goUp = 32768; 	// On the high part
+		float Tmt; 			// Measurement time (datasheet page 9)
+		const float Tint = 2.8; 	// Internal Clock Period (datasheet page 4 --> 2.8 typ -- 4.0 max)
+		uint8_t Gain = 1;
 
+		float DATA0; 			// Visible Light
+		float DATA1; 			// Infrared Light
 	public:
+		bool debug = false;
 		uint8_t address = 0x29;
-		float reading;
+		int reading;
 		bool start();
 		bool stop();
 		bool get();
@@ -69,9 +81,11 @@ class Sck_SHT31
 		const uint16_t SOFT_RESET = 0x30A2;
 		const uint16_t SINGLE_SHOT_HIGH_REP = 0x2400;
 
-		uint32_t timeout = 15;	// Time in ms to wait for a reading
-		uint32_t lastTime = 0;
-		void sendComm(uint16_t comm);
+		uint32_t timeout = 100;	// Time in ms to wait for a reading
+		uint8_t retrys = 3;
+		bool debug = false;
+		bool update();
+		bool sendComm(uint16_t comm);
 		uint8_t crc8(const uint8_t *data, int len);
 	public:
 		uint8_t address = 0x44;
@@ -82,7 +96,7 @@ class Sck_SHT31
 		float humidity;
 		bool start();
 		bool stop();
-		bool update();
+		bool getReading();
 };
 
 // Gases CO and NO2
@@ -317,7 +331,7 @@ class SckUrban
 		bool control(SckBase *base, SensorType wichSensor, String command);
 
 		// Light
-		Sck_BH1721FVC sck_bh1721fvc;
+		Sck_BH1730FVC sck_bh1730fvc;
 
 		// Temperature and Humidity
 		Sck_SHT31 sck_sht31 = Sck_SHT31(&Wire);

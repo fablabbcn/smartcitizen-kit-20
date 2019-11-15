@@ -33,7 +33,7 @@ enum SensorType
 	SENSOR_NOISE_DBA,
 	SENSOR_NOISE_DBC,
 	SENSOR_NOISE_DBZ,
-	SENSOR_NOISE_FFT, 
+	SENSOR_NOISE_FFT,
 	SENSOR_ALTITUDE,
 	SENSOR_PRESSURE,
 	SENSOR_PRESSURE_TEMP,
@@ -76,8 +76,10 @@ enum SensorType
 	SENSOR_ATLAS_DO,
 	SENSOR_ATLAS_DO_SAT,
 
+	SENSOR_CHIRP_MOISTURE_RAW,
 	SENSOR_CHIRP_MOISTURE,
 	SENSOR_CHIRP_TEMPERATURE,
+	SENSOR_CHIRP_LIGHT,
 
 	SENSOR_EXT_PM_1,
 	SENSOR_EXT_PM_25,
@@ -109,7 +111,7 @@ enum SensorType
 
 	SENSOR_PM_DALLAS_TEMP,
 	SENSOR_DALLAS_TEMP,
-	
+
 	SENSOR_SHT31_TEMP,
 	SENSOR_SHT31_HUM,
 
@@ -120,9 +122,6 @@ enum SensorType
 	SENSOR_BME680_HUMIDITY,
 	SENSOR_BME680_PRESSURE,
 	SENSOR_BME680_VOCS,
-
-	SENSOR_CCS811_VOCS,
-	SENSOR_CCS811_ECO2,
 
 	// Actuators (This is temp)
 	SENSOR_GROOVE_OLED,
@@ -245,8 +244,10 @@ class AllSensors
 
 			// I2C Moisture Sensor (chirp)
 			// https://github.com/Miceuz/i2c-moisture-sensor
-			OneSensor { BOARD_AUX, 		100,	SENSOR_CHIRP_MOISTURE, 			"CHRP_MOIS", 		"Soil Moisture", 				50, 		false, 		true, 		1,			},
+			OneSensor { BOARD_AUX, 		100,	SENSOR_CHIRP_MOISTURE_RAW, 		"CHRP_MOIS_RAW",	"Soil Moisture Raw", 				0, 		false, 		true, 		1,			},
+			OneSensor { BOARD_AUX, 		100,	SENSOR_CHIRP_MOISTURE, 			"CHRP_MOIS", 		"Soil Moisture Percent",			50, 		false, 		true, 		1,			"%"},
 			OneSensor { BOARD_AUX, 		100,	SENSOR_CHIRP_TEMPERATURE, 		"CHRP_TEMP", 		"Soil Temperature", 				0, 		false, 		true, 		1,			"C"},
+			OneSensor { BOARD_AUX, 		100,	SENSOR_CHIRP_LIGHT, 	 		"CHRP_LIGHT", 		"Soil Light", 					0, 		false, 		true, 		1,			},
 
 			OneSensor { BOARD_AUX,		200,	SENSOR_EXT_PM_1,			"EXT_PM_1",		"Ext PM 1.0",					89,		false,		false,		1,			"ug/m3"},
 			OneSensor { BOARD_AUX,		200,	SENSOR_EXT_PM_25,			"EXT_PM_25",		"Ext PM 2.5",					87,		false,		false,		1,			"ug/m3"},
@@ -291,9 +292,6 @@ class AllSensors
 			OneSensor { BOARD_AUX,		0,	SENSOR_BME680_HUMIDITY,			"BME680_HUM",		"Humidity BME680",				0,		false,		false,		1,			"%"},
 			OneSensor { BOARD_AUX,		100,	SENSOR_BME680_PRESSURE,			"BME680_PRESS",		"Barometric pressure BME680",			0,		false,		false,		1,			"kPa"},
 			OneSensor { BOARD_AUX,		100,	SENSOR_BME680_VOCS,			"BME680_VOCS",		"VOC Gas BME680",				0,		false,		false,		1,			"Ohms"},
-
-			OneSensor { BOARD_AUX,		100,	SENSOR_CCS811_VOCS,			"CCS811_VOCS",		"VOC Gas CCS811",				113,		false,		true,		1,			"ppb"},
-			OneSensor { BOARD_AUX,		100,	SENSOR_CCS811_ECO2,			"CCS811_ECO2",		"eCO2 Gas CCS811",				112,		false,		true,		1,			"ppm"},
 
 			// Later this will be moved to a Actuators.h file
 			// Groove I2C Oled Display 96x96

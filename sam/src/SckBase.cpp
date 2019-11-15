@@ -160,6 +160,12 @@ void SckBase::setup()
 			saveConfig();
 		}
 
+		for (uint8_t i=0; i<SENSOR_COUNT; i++) {
+			OneSensor *wichSensor = &sensors[static_cast<SensorType>(i)];
+			if (wichSensor->enabled) urban.start(wichSensor->type);
+			else urban.stop(wichSensor->type);
+		}
+
 	} else {
 		sckOut("No urban board detected!!");
 		urbanPresent = false;
@@ -327,7 +333,7 @@ void SckBase::reviewState()
 			return;
 		}
 
-		if (st.helloPending || !st.timeStat.ok || (timeToPublish  && readingsList.countGroups() > 0) || !infoPublished) {
+		if (st.helloPending || !st.timeStat.ok || timeToPublish || !infoPublished) {
 
 			if (!st.wifiStat.ok) {
 
@@ -346,6 +352,9 @@ void SckBase::reviewState()
 
 					lastPublishTime = rtc.getEpoch();
 					st.wifiStat.reset(); 		// Restart wifi retry count
+
+					updateSensors(); 	// Keep getting readings, we can keep them in flash
+					infoPublished = true; 	// Will try to publish info on next boot, in the meantime this will allow us to sleep between readings.
 				}
 
 			} else {
@@ -393,6 +402,7 @@ void SckBase::reviewState()
 					} else if (st.infoStat.error){
 
 						sckOut("ERROR sending kit info to platform!!!");
+						infoPublished = true; 		// We will try on next reset
 						st.infoStat.reset();
 
 					}
@@ -439,6 +449,8 @@ void SckBase::reviewState()
 					} else if (readingsList.countGroups() > 0) {
 
 						if (st.publishStat.retry()) netPublish();
+					} else {
+						updateSensors();
 					}
 				}
 			}
@@ -446,7 +458,9 @@ void SckBase::reviewState()
 
 
 			while ( 	!charger.onUSB && 					// No USB connected
+					!timeToPublish && 					// No need to publish
 					pendingSensors <= 0 && 					// No sensor to wait to
+					st.timeStat.ok && 					// RTC is synced and working
 					millis() - lastUserEvent > waitAfterLastEvent) { 	// No recent user interaction (button, sdcard or USB events)
 
 
@@ -461,6 +475,7 @@ void SckBase::reviewState()
 				updatePower();
 			}
 
+			led.update(led.BLUE, led.PULSE_SOFT);
 			updateSensors();
 			if (readingsList.countGroups() > 0) sdPublish();
 
@@ -526,6 +541,7 @@ void SckBase::reviewState()
 			while ( 	!charger.onUSB && 					// No USB connected
 					!timeToPublish && 					// No need to publish
 					pendingSensors <= 0 && 					// No sensor to wait to
+					st.timeStat.ok && 					// RTC is synced and working
 					millis() - lastUserEvent > waitAfterLastEvent) { 	// No recent user interaction (button, sdcard or USB events)
 
 
@@ -549,6 +565,7 @@ void SckBase::reviewState()
 
 				if (!sdPublish()) {
 					sckOut("ERROR failed publishing to SD card");
+					// TODO if this error happens the error blink gets interrupted by the one that is just out of sleep mode
 					led.update(led.PINK, led.PULSE_HARD_FAST);
 				} else {
 					timeToPublish = false;
@@ -575,18 +592,22 @@ void SckBase::enterSetup()
 }
 void SckBase::printState()
 {
+	// TODO fix bug: after configuring wrong wifi, restart kit, wait for error and sdcard publish and type "state" command.
+	// it will enter setup mode !?!? and if you type "state" command again it will reboot.
 	char t[] = "true";
 	char f[] = "false";
 
-	sprintf(outBuff, "%sonSetup: %s\r\n", outBuff, st.onSetup  ? t : f);
+	sprintf(outBuff, "%s\r\nonSetup: %s\r\n", outBuff, st.onSetup  ? t : f);
 	sprintf(outBuff, "%stokenSet: %s\r\n", outBuff, st.tokenSet  ? t : f);
 	sprintf(outBuff, "%shelloPending: %s\r\n", outBuff, st.helloPending  ? t : f);
 	sprintf(outBuff, "%smode: %s\r\n", outBuff, modeTitles[st.mode]);
 	sprintf(outBuff, "%scardPresent: %s\r\n", outBuff, st.cardPresent  ? t : f);
 	sprintf(outBuff, "%ssleeping: %s\r\n", outBuff, st.sleeping  ? t : f);
+	sprintf(outBuff, "%sinfoPublished: %s\r\n", outBuff, infoPublished  ? t : f);
+	sckOut(PRIO_HIGH, false);
 
 	sprintf(outBuff, "%s\r\nespON: %s\r\n", outBuff, st.espON  ? t : f);
-	sprintf(outBuff, "%s\r\nespBooting: %s\r\n", outBuff, st.espBooting  ? t : f);
+	sprintf(outBuff, "%sespBooting: %s\r\n", outBuff, st.espBooting  ? t : f);
 	sprintf(outBuff, "%swifiSet: %s\r\n", outBuff, st.wifiSet  ? t : f);
 	sprintf(outBuff, "%swifiOK: %s\r\n", outBuff, st.wifiStat.ok ? t : f);
 	sprintf(outBuff, "%swifiError: %s\r\n", outBuff, st.wifiStat.error ? t : f);
@@ -594,11 +615,12 @@ void SckBase::printState()
 
 	sprintf(outBuff, "\r\ntimeOK: %s\r\n", st.timeStat.ok ? t : f);
 	sprintf(outBuff, "%stimeError: %s\r\n", outBuff, st.timeStat.error ? t : f);
+	sckOut(PRIO_HIGH, false);
 
 	sprintf(outBuff, "%s\r\npublishOK: %s\r\n", outBuff, st.publishStat.ok ? t : f);
 	sprintf(outBuff, "%spublishError: %s\r\n", outBuff, st.publishStat.error ? t : f);
-	sprintf(outBuff, "%s\r\ntime to next publish: %li\r\n", outBuff, config.publishInterval - (rtc.getEpoch() - lastPublishTime));
-
+	sprintf(outBuff, "%stime to next publish: %li\r\n", outBuff, config.publishInterval - (rtc.getEpoch() - lastPublishTime));
+	sprintf(outBuff, "%stimeToPublish: %s\r\n", outBuff, timeToPublish ? t : f);
 	sckOut(PRIO_HIGH, false);
 }
 
@@ -1338,9 +1360,6 @@ void SckBase::goToSleep()
 	// Stop PM sensor
 	if (urban.sck_pm.started) urban.sck_pm.stop();
 
-	// Turn off USB led
-	digitalWrite(pinLED_USB, HIGH);
-
 	if (sckOFF) {
 
 		sprintf(outBuff, "Sleeping forever!!! (until a button click)");
@@ -1353,9 +1372,8 @@ void SckBase::goToSleep()
 		// Detach sdcard interrupt to avoid spurious wakeup
 		detachInterrupt(pinCARD_DETECT);
 
-		// Atach button wake Up interrupt
-		pinMode(pinBUTTON, INPUT_PULLUP);
-		LowPower.attachInterruptWakeup(pinBUTTON, ISR_button, CHANGE);
+		// Turn off USB led
+		digitalWrite(pinLED_USB, HIGH);
 
 		LowPower.deepSleep();
 	} else {
@@ -1365,8 +1383,13 @@ void SckBase::goToSleep()
 
 		st.sleeping = true;
 
+		// Turn off USB led
+		digitalWrite(pinLED_USB, HIGH);
+
 		LowPower.deepSleep(sleepTime);
 	}
+
+	st.sleeping = false;
 
 	// Re enable Sanity cyclic reset
 	rtc.setAlarmTime(wakeUP_H, wakeUP_M, wakeUP_S);
@@ -1509,9 +1532,9 @@ void SckBase::updatePower()
 void SckBase::updateSensors()
 {
 	if (!rtc.isConfigured() || rtc.getEpoch() < 1514764800) st.timeStat.reset();
-	if (!st.timeStat.ok || st.helloPending) return;
+	if (!st.timeStat.ok) return;
 	if (st.onSetup) return;
-	if (st.mode == MODE_SD && !st.cardPresent) return;
+	if (st.mode == MODE_SD && !st.cardPresent) return; // TODO this should be removed when flash memory is implemented
 
 	// Main reading loop
 	if (rtc.getEpoch() - lastSensorUpdate >= config.readInterval) {
@@ -1728,7 +1751,7 @@ bool SckBase::getReading(OneSensor *wichSensor)
 		}
 		case BOARD_AUX:
 		{
-				auxBoards.getReading(wichSensor, this);
+				auxBoards.getReading(wichSensor);
 				break;
 		}
 	}
@@ -1748,14 +1771,15 @@ bool SckBase::getReading(OneSensor *wichSensor)
 		// Correct depending on battery/USB and network/sd card status
 		if (charger.onUSB) {
 			if (st.mode == MODE_NET) wichSensor->reading = String(aux_temp - 2.7);
-			else wichSensor->reading = String(aux_temp - 0.95);
+			else wichSensor->reading = String(aux_temp - 1.25);
 		} else {
-			wichSensor->reading = String(aux_temp - 0.95);
+			if (st.mode == MODE_NET) wichSensor->reading = String(aux_temp - 1.15);
+			else wichSensor->reading = String(aux_temp - 0.95);
 		}
 
 	} else if(wichSensor->type == SENSOR_HUMIDITY) {
 		float aux_hum = wichSensor->reading.toFloat();
-		wichSensor->reading = String(aux_hum + 11);
+		wichSensor->reading = String(aux_hum + 6.5);
 	}
 
 	return true;
@@ -1970,8 +1994,9 @@ bool SckBase::sdPublish()
 			if (st.mode == MODE_SD) {
 				for (uint8_t i=0; i<counter; i++) readingsList.delLastGroup();
 			}
-			return true;
 		}
+		return true;
+
 	} else  {
 		st.cardPresent = false;
 		st.cardPresentError = false;
@@ -1982,9 +2007,14 @@ bool SckBase::sdPublish()
 // **** Time
 bool SckBase::setTime(String epoch)
 {
-	uint32_t wasOn = rtc.getEpoch() - espStarted;
+	// Keep track of time passed before updating clock
+	uint32_t timeSinceLastUpdate = rtc.getEpoch() - lastSensorUpdate;
+	uint32_t timeSinceLastPublish = rtc.getEpoch() - lastPublishTime;
+	uint32_t timeSinceEspStarted = rtc.getEpoch() - espStarted;
+
 	rtc.setEpoch(epoch.toInt());
-	if (abs(rtc.getEpoch() - epoch.toInt()) < 2) {
+	int32_t diff = rtc.getEpoch() - epoch.toInt();
+	if (abs(diff) < 2) {
 		timeSyncAfterBoot = true;
 		st.timeStat.setOk();
 		if (urbanPresent) {
@@ -1992,7 +2022,12 @@ bool SckBase::setTime(String epoch)
 			getReading(&sensors[SENSOR_CO_HEAT_TIME]);
 			getReading(&sensors[SENSOR_NO2_HEAT_TIME]);
 		}
-		espStarted = rtc.getEpoch() - wasOn;
+
+		// Adjust variables after updating clock
+		lastSensorUpdate = rtc.getEpoch() - timeSinceLastUpdate;
+		lastPublishTime = rtc.getEpoch() - timeSinceLastPublish;
+		espStarted = rtc.getEpoch() - timeSinceEspStarted;
+
 		ISOtime();
 		sprintf(outBuff, "RTC updated: %s", ISOtimeBuff);
 		sckOut();

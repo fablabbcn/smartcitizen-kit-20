@@ -16,13 +16,22 @@ Sck_DallasTemp 		dallasTemp;
 Sck_SHT31 		sht31 = Sck_SHT31(&auxWire);
 Sck_Range 		range;
 Sck_BME680 		bme680;
-Sck_CCS811 		ccs811;
 
 // Eeprom flash emulation to store I2C address
-// FlashStorage(eepromAuxI2Caddress, Configuration);
+FlashStorage(eepromAuxData, EepromAuxData);
 
 bool AuxBoards::start(SensorType wichSensor)
 {
+	if (!dataLoaded) {
+		data = eepromAuxData.read();
+		dataLoaded = true;
+
+		if (data.calibration.moistureCalDataValid) {
+			moistureChirp.dryPoint = data.calibration.dryPoint;
+			moistureChirp.wetPoint = data.calibration.wetPoint;
+			moistureChirp.calibrated = true;
+		}
+	}
 
 	switch (wichSensor) {
 
@@ -47,8 +56,10 @@ bool AuxBoards::start(SensorType wichSensor)
 		case SENSOR_ATLAS_EC_SG: 		return atlasEC.start(); break;
 		case SENSOR_ATLAS_DO:
 		case SENSOR_ATLAS_DO_SAT: 		return atlasDO.start(); break;
+		case SENSOR_CHIRP_MOISTURE_RAW:
+		case SENSOR_CHIRP_MOISTURE:
 		case SENSOR_CHIRP_TEMPERATURE:
-		case SENSOR_CHIRP_MOISTURE:		return moistureChirp.start(); break;
+		case SENSOR_CHIRP_LIGHT:		return moistureChirp.start(); break;
 		case SENSOR_EXT_A_PM_1:
 		case SENSOR_EXT_A_PM_25:
 		case SENSOR_EXT_A_PM_10:
@@ -89,8 +100,6 @@ bool AuxBoards::start(SensorType wichSensor)
 		case SENSOR_BME680_HUMIDITY:		return bme680.start(); break;
 		case SENSOR_BME680_PRESSURE:		return bme680.start(); break;
 		case SENSOR_BME680_VOCS:		return bme680.start(); break;
-		case SENSOR_CCS811_VOCS:		return ccs811.start(); break;
-		case SENSOR_CCS811_ECO2: 		return ccs811.start(); break;
 		default: break;
 	}
 
@@ -161,15 +170,13 @@ bool AuxBoards::stop(SensorType wichSensor)
 		case SENSOR_BME680_HUMIDITY:		return bme680.stop(); break;
 		case SENSOR_BME680_PRESSURE:		return bme680.stop(); break;
 		case SENSOR_BME680_VOCS:		return bme680.stop(); break;
-		case SENSOR_CCS811_VOCS:		return ccs811.stop(); break;
-		case SENSOR_CCS811_ECO2:		return ccs811.stop(); break;
 		default: break;
 	}
 
 	return false;
 }
 
-void AuxBoards::getReading(OneSensor *wichSensor, SckBase *base)
+void AuxBoards::getReading(OneSensor *wichSensor)
 {
 	wichSensor->state = 0;
 	switch (wichSensor->type) {
@@ -193,8 +200,10 @@ void AuxBoards::getReading(OneSensor *wichSensor, SckBase *base)
 		case SENSOR_ATLAS_EC_SG:		if (atlasEC.getReading()) 	{ wichSensor->reading = String(atlasEC.newReadingB); return; } break;
 		case SENSOR_ATLAS_DO:			if (atlasDO.getReading()) 	{ wichSensor->reading = String(atlasDO.newReading); return; } break;
 		case SENSOR_ATLAS_DO_SAT:		if (atlasDO.getReading()) 	{ wichSensor->reading = String(atlasDO.newReadingB); return; } break;
-		case SENSOR_CHIRP_MOISTURE:		wichSensor->reading = String(moistureChirp.getReading(moistureChirp.CHIRP_MOISTURE)); return;
-		case SENSOR_CHIRP_TEMPERATURE:		wichSensor->reading = String(moistureChirp.getReading(moistureChirp.CHIRP_TEMPERATURE)); return;
+		case SENSOR_CHIRP_MOISTURE_RAW:		if (moistureChirp.getReading(SENSOR_CHIRP_MOISTURE_RAW)) { wichSensor->reading = String(moistureChirp.raw); return; } break;
+		case SENSOR_CHIRP_MOISTURE:		if (moistureChirp.getReading(SENSOR_CHIRP_MOISTURE)) { wichSensor->reading = String(moistureChirp.moisture); return; } break;
+		case SENSOR_CHIRP_TEMPERATURE:		if (moistureChirp.getReading(SENSOR_CHIRP_TEMPERATURE)) { wichSensor->reading = String(moistureChirp.temperature); return; } break;
+		case SENSOR_CHIRP_LIGHT:		if (moistureChirp.getReading(SENSOR_CHIRP_LIGHT)) { wichSensor->reading = String(moistureChirp.light); return; } break;
 		case SENSOR_EXT_A_PM_1:
 		case SENSOR_EXT_A_PM_25:
 		case SENSOR_EXT_A_PM_10:
@@ -224,16 +233,14 @@ void AuxBoards::getReading(OneSensor *wichSensor, SckBase *base)
 		case SENSOR_EXT_PN_10: 			wichSensor->reading = String(pmSensor.getReading(SLOT_AVG, wichSensor->type)); return;
 		case SENSOR_PM_DALLAS_TEMP: 		wichSensor->reading = String(pmDallasTemp.getReading()); return;
 		case SENSOR_DALLAS_TEMP: 		if (dallasTemp.getReading()) 			{ wichSensor->reading = String(dallasTemp.reading); return; } break;
-		case SENSOR_SHT31_TEMP: 		if (sht31.update()) 				{ wichSensor->reading = String(sht31.temperature); return; } break;
-		case SENSOR_SHT31_HUM: 			if (sht31.update()) 				{ wichSensor->reading = String(sht31.humidity); return; } break;
+		case SENSOR_SHT31_TEMP: 		if (sht31.getReading()) 				{ wichSensor->reading = String(sht31.temperature); return; } break;
+		case SENSOR_SHT31_HUM: 			if (sht31.getReading()) 				{ wichSensor->reading = String(sht31.humidity); return; } break;
 		case SENSOR_RANGE_DISTANCE: 		if (range.getReading(SENSOR_RANGE_DISTANCE)) 	{ wichSensor->reading = String(range.readingDistance); return; } break;
 		case SENSOR_RANGE_LIGHT: 		if (range.getReading(SENSOR_RANGE_LIGHT)) 	{ wichSensor->reading = String(range.readingLight); return; } break;
 		case SENSOR_BME680_TEMPERATURE:		if (bme680.getReading()) 			{ wichSensor->reading = String(bme680.temperature); return; } break;
 		case SENSOR_BME680_HUMIDITY:		if (bme680.getReading()) 			{ wichSensor->reading = String(bme680.humidity); return; } break;
 		case SENSOR_BME680_PRESSURE:		if (bme680.getReading()) 			{ wichSensor->reading = String(bme680.pressure); return; } break;
 		case SENSOR_BME680_VOCS:		if (bme680.getReading()) 			{ wichSensor->reading = String(bme680.VOCgas); return; } break;
-		case SENSOR_CCS811_VOCS:		if (ccs811.getReading(base)); 			{ wichSensor->reading = String(ccs811.VOCgas); return; } break;
-		case SENSOR_CCS811_ECO2:		if (ccs811.getReading(base)); 			{ wichSensor->reading = String(ccs811.ECO2gas); return; } break;
 		default: break;
 	}
 
@@ -368,14 +375,64 @@ String AuxBoards::control(SensorType wichSensor, String command)
 			}
 			break;
 
-		} case SENSOR_CHIRP_TEMPERATURE:
-		case SENSOR_CHIRP_MOISTURE: {
+		} case SENSOR_CHIRP_MOISTURE_RAW:
+		case SENSOR_CHIRP_MOISTURE:
+		case SENSOR_CHIRP_TEMPERATURE:
+		case SENSOR_CHIRP_LIGHT: {
 
 			if (command.startsWith("get ver")) {
 
 				return String(moistureChirp.getVersion());
 
-			} else if (command.startsWith("help")) return F("Available commands for this sensor:\n\r* get ver");
+			} else if (command.startsWith("reset")) {
+
+				for(uint8_t address = 1; address < 127; address++ ) {
+
+					uint8_t error;
+					auxWire.beginTransmission(address);
+
+					if (auxWire.endTransmission() == 0) {
+						if (moistureChirp.resetAddress(address)) return F("Changed chirp address to default 0x20");
+					}
+				}
+				return F("Can't find any chirp sensor...");
+
+			} else if (command.startsWith("cal")) {
+
+				command.replace("cal", "");
+				command.trim();
+
+				int space_index = command.indexOf(" ");
+
+				if (space_index > 0) {
+
+					String preDry = command.substring(0, space_index);
+					String preWet = command.substring(space_index + 1);
+
+					int32_t dryInt = preDry.toInt();
+					int32_t wetInt = preWet.toInt();
+
+					if ((dryInt == 0 && preDry != "0") || (wetInt == 0 && preWet != "0")) return F("Error reading values, please try again!");
+
+					moistureChirp.dryPoint = data.calibration.dryPoint = dryInt;
+					moistureChirp.wetPoint = data.calibration.wetPoint = wetInt;
+					data.calibration.moistureCalDataValid = true;
+					moistureChirp.calibrated = true;
+
+					data.valid = true;
+					eepromAuxData.write(data);
+				}
+
+				String response;
+				if (moistureChirp.calibrated) {
+					response += "Dry point: " + String(moistureChirp.dryPoint) + "\r\nWet point: " + String(moistureChirp.wetPoint);
+				} else {
+					response = F("Moisture sensor is NOT calibrated");
+				}
+				return response;
+
+
+			} else if (command.startsWith("help") || command.length() == 0) return F("Available commands:\r\n* get ver\r\n* reset (connect only the chirp to aux)\r\n* cal dryPoint wetPoint");
 			else return F("Unrecognized command!! please try again...");
 			break;
 
@@ -395,14 +452,6 @@ String AuxBoards::control(SensorType wichSensor, String command)
 
 			}
 			break;
-		} case SENSOR_CCS811_VOCS:
-		case SENSOR_CCS811_ECO2: {
-
-			if (command.startsWith("compensate")) {
-				ccs811.compensate = !ccs811.compensate;
-				return (ccs811.compensate ? "True" : "False");
-			}
-
 		} default: return "Unrecognized sensor!!!"; break;
 	}
 	return "Unknown error on control command!!!";
@@ -431,6 +480,7 @@ bool GrooveI2C_ADC::start()
 	auxWire.endTransmission();
 	return true;
 }
+
 bool GrooveI2C_ADC::stop()
 {
 
@@ -907,7 +957,6 @@ uint8_t Atlas::getResponse()
 
 bool Moisture::start()
 {
-
 	if (!I2Cdetect(&auxWire, deviceAddress)) return false;
 	if (alreadyStarted) return true;
 
@@ -925,7 +974,7 @@ bool Moisture::stop()
 	return true;
 }
 
-float Moisture::getReading(typeOfReading wichReading)
+bool Moisture::getReading(SensorType wichSensor)
 {
 	uint32_t started = millis();
 	while (chirp.isBusy()) {
@@ -933,29 +982,37 @@ float Moisture::getReading(typeOfReading wichReading)
 		delay(1);
 	}
 
-	switch(wichReading) {
-		case CHIRP_MOISTURE: {
+	switch(wichSensor) {
+		case SENSOR_CHIRP_MOISTURE_RAW: {
 
-			return chirp.getCapacitance();
-			break;
+			raw = chirp.getCapacitance();
+			return true;
 
-		} case CHIRP_TEMPERATURE: {
+		} case SENSOR_CHIRP_MOISTURE: {
 
-			return chirp.getTemperature() / 10.0;
-			break;
+			if (!calibrated) return false;
+			int32_t thisValue = chirp.getCapacitance();
+			moisture = map(thisValue, dryPoint, wetPoint, 0.0, 100.0);
+			return true;
 
-		} case CHIRP_LIGHT: {
+		} case SENSOR_CHIRP_TEMPERATURE: {
 
-			float thisReading = chirp.getLight(false); 	// We are sending the reading from previous request
-			chirp.startMeasureLight(); 			// Ask for next reading
+			temperature = chirp.getTemperature() / 10.0;
+			return true;
 
-			return thisReading;
-			break;
+		} case SENSOR_CHIRP_LIGHT: {
+
+			// From Arduino library documentation
+			// The measurement gives 65535 in a dark room away form desk lamp - so more light, lower reading.
+
+			light = chirp.getLight(false); 		// We are sending the reading from previous request
+			chirp.startMeasureLight(); 		// Ask for next reading
+			return true;
 
 		} default: break;
 	}
 
-	return 0;
+	return false;
 }
 
 uint8_t Moisture::getVersion()
@@ -968,6 +1025,12 @@ void Moisture::sleep()
 {
 
 	chirp.sleep();
+}
+
+bool Moisture::resetAddress(int currentAddress)
+{
+	chirp.changeSensor(currentAddress, true);
+	return chirp.setAddress(0x20, true);
 }
 
 bool PMsensor::start()
@@ -1227,46 +1290,6 @@ bool Sck_BME680::getReading()
 	return true;
 }
 
-bool Sck_CCS811::start()
-{
-	if (alreadyStarted) return true;
-
-	if (ccs.begin() != CCS811Core::SENSOR_SUCCESS) return false;
-
-	alreadyStarted = true;
-	return true;
-}
-
-bool Sck_CCS811::stop()
-{
-
-	return true;
-}
-
-bool Sck_CCS811::getReading(SckBase *base)
-{
-	if (!ccs.dataAvailable()) return false;
-
-	ccs.readAlgorithmResults();
-
-	VOCgas = ccs.getTVOC();
-	ECO2gas = ccs.getCO2();
-
-	if (compensate) {
-		OneSensor *tempSensor = &(base->sensors[static_cast<SensorType>(SENSOR_TEMPERATURE)]);
-		OneSensor *humSensor = &(base->sensors[static_cast<SensorType>(SENSOR_HUMIDITY)]);
-		if (base->sensors[SENSOR_TEMPERATURE].enabled && base->sensors[SENSOR_HUMIDITY].enabled) {
-			// TODO debuiggerar el resato de los errores de compilacion
-			// TODO terminar el cerry pick de Updated getReading functions to use sensor.state property
-			base->getReading(humSensor);
-			base->getReading(tempSensor);
-			if (base->sensors[SENSOR_HUMIDITY].state == 0 && base->sensors[SENSOR_TEMPERATURE].state == 0 ) {
-				ccs.setEnvironmentalData(base->sensors[SENSOR_HUMIDITY].reading.toFloat(), base->sensors[SENSOR_TEMPERATURE].reading.toFloat());
-			}
-		}
-	}
-	return true;
-}
 
 void writeI2C(byte deviceaddress, byte instruction, byte data )
 {

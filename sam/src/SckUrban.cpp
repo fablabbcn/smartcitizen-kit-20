@@ -9,7 +9,7 @@ void SERCOM5_Handler() {
 
 bool SckUrban::setup()
 {
-	if (!sck_bh1721fvc.start()) return false;
+	if (!sck_bh1730fvc.start()) return false;
 	if (!sck_sht31.start()) return false;
 	if (!sck_noise.start()) return false;
 	if (!sck_mpl3115A2.start()) return false;
@@ -22,7 +22,7 @@ bool SckUrban::start(SensorType wichSensor)
 {
 	// TODO find a way to manage MICS start and stop time without pasing time as a parameter
 	switch(wichSensor) {
-		case SENSOR_LIGHT: 				if (sck_bh1721fvc.start()) return true; break;
+		case SENSOR_LIGHT: 				if (sck_bh1730fvc.start()) return true; break;
 		case SENSOR_TEMPERATURE:
 		case SENSOR_HUMIDITY: 				if (sck_sht31.start()) return true; break;
 		case SENSOR_CO_RESISTANCE:
@@ -62,7 +62,7 @@ bool SckUrban::stop(SensorType wichSensor)
 
 	// TODO find a way to manage MICS start and stop time without pasing time as a parameter
 	switch(wichSensor) {
-		case SENSOR_LIGHT: 				if (sck_bh1721fvc.stop()) return true; break;
+		case SENSOR_LIGHT: 				if (sck_bh1730fvc.stop()) return true; break;
 		case SENSOR_TEMPERATURE:
 		case SENSOR_HUMIDITY: 				if (sck_sht31.stop()) return true; break;
 		case SENSOR_CO_RESISTANCE:
@@ -102,9 +102,9 @@ void SckUrban::getReading(SckBase *base, OneSensor *wichSensor)
 {
 	wichSensor->state = 0;
 	switch(wichSensor->type) {
-		case SENSOR_LIGHT:			if (sck_bh1721fvc.get()) 			{ wichSensor->reading = String(sck_bh1721fvc.reading); return; } break;
-		case SENSOR_TEMPERATURE: 		if (sck_sht31.update()) 			{ wichSensor->reading = String(sck_sht31.temperature); return; } break;
-		case SENSOR_HUMIDITY: 			if (sck_sht31.update()) 			{ wichSensor->reading = String(sck_sht31.humidity); return; } break;
+		case SENSOR_LIGHT:			if (sck_bh1730fvc.get()) 			{ wichSensor->reading = String(sck_bh1730fvc.reading); return; } break;
+		case SENSOR_TEMPERATURE: 		if (sck_sht31.getReading()) 			{ wichSensor->reading = String(sck_sht31.temperature); return; } break;
+		case SENSOR_HUMIDITY: 			if (sck_sht31.getReading()) 			{ wichSensor->reading = String(sck_sht31.humidity); return; } break;
 		case SENSOR_CO_RESISTANCE: 		if (sck_mics4514.getCOresistance())		{ wichSensor->reading = String(sck_mics4514.coResistance); return; } break;
 		case SENSOR_CO_HEAT_VOLT: 								wichSensor->reading = String(sck_mics4514.getCOheatVoltage()); return; break;
 		case SENSOR_CO_HEAT_TIME: 								wichSensor->reading = String(sck_mics4514.getHeatTime(rtc->getEpoch())); return; break; 
@@ -175,18 +175,40 @@ bool SckUrban::control(SckBase *base, SensorType wichSensor, String command)
 }
 
 // Light
-bool Sck_BH1721FVC::start()
+bool Sck_BH1730FVC::start()
 {
 	if (!I2Cdetect(&Wire, address)) return false;
 	return true;
 }
-bool Sck_BH1721FVC::stop()
+bool Sck_BH1730FVC::stop()
 {
+	// 0x00 register - CONTROL
+	uint8_t CONTROL = B000000;
+	// ADC_INTR: 	5	0:Interrupt is inactive.
+	// 			1:Interrupt is active.
+	// ADC_VALID:	4	0:ADC data is not updated after last reading.
+	// 			1:ADC data is updated after last reading.
+	// ONE_TIME:	3	0:ADC measurement is continuous.
+	// 			1:ADC measurement is one time.
+	// 			ADC	transits to power down automatically.
+	// DATA_SEL:	2	0:ADC measurement Type0 and Type1.
+	// 			1:ADC measurement Type0 only.
+	// ADC_EN:	1	0:ADC measurement stop.
+	// 			1:ADC measurement start.
+	// POWER:	0	0:ADC power down.
+	// 			1:ADC power on.
+
+	// Send Configuration
+	// This will save around 150 uA
+	Wire.beginTransmission(address);
+	Wire.write(0x80);
+	Wire.write(CONTROL);
+	Wire.endTransmission();
+
 	return true;
 }
-bool Sck_BH1721FVC::get()
+bool Sck_BH1730FVC::updateValues()
 {
-
 	// Datasheet http://rohmfs.rohm.com/en/products/databook/datasheet/ic/sensor/light/bh1730fvc-e.pdf
 
 	// 0x00 register - CONTROL
@@ -206,23 +228,12 @@ bool Sck_BH1721FVC::get()
 	// 			1:ADC power on.
 
 	// 0x01 register - TIMMING
-	uint8_t ITIME0  = 0xA0;
-	// float TOP = 26500.0; 	 // This is relative to the value above (less resolution more range) TODO define max based on calibration curve (to be implemented)
+	// uint8_t ITIME  = 0xDA; 	// Datasheet default value (218 DEC)
 
 	// 00h: Start / Stop of measurement is set by special command. (ADC manual integration mode)
-	// 01h to FFh: Integration time is determined by ITIME value
+	// 01h to FFh: Integration time is determined by ITIME value (defaultt is oxDA)
 	// Integration Time : ITIME_ms = Tint * 964 * (256 - ITIME)
 	// Measurement time : Tmt= ITIME_ms + Tint * 714
-
-	// TIME0 posible values, more time = more resolution
-	// 0xA0 (~3200 values in 260 ms)
-	// 0xB0 (~2100 values in 220 ms)
-	// 0xC0 (~1300 values in 180 ms)
-	// 0xD0 (~800 values in 130 ms)
-	// 0xE0 (~350 values in 88 ms)
-	// 0xF0 (~80 values in 45 ms)
-	// 0xFA (12 values in 18 ms)
-	// 0XFB (8 values in 15 ms)
 
 	// 0x02 register - INTERRUPT
 	uint8_t INTERRUPT = B00000000;
@@ -254,7 +265,7 @@ bool Sck_BH1721FVC::get()
 	//	  X10 : x64 gain mode
 	//	  X11 : x128 gain mode
 
-	uint8_t DATA[8] = {CONTROL, ITIME0, INTERRUPT, TH_LOW0, TH_LOW1, TH_UP0, TH_UP1, GAIN};
+	uint8_t DATA[8] = {CONTROL, ITIME, INTERRUPT, TH_LOW0, TH_LOW1, TH_UP0, TH_UP1, GAIN};
 
 	// Send Configuration
 	Wire.beginTransmission(address);
@@ -262,11 +273,25 @@ bool Sck_BH1721FVC::get()
 	for (int i= 0; i<8; i++) Wire.write(DATA[i]);
 	Wire.endTransmission();
 
+	// Calculate timming values
+	ITIME_ms = (Tint * 964 * (256 - ITIME)) / 1000;
+	Tmt =  ITIME_ms + (Tint * 714);
 
-	// TODO calibration curve
-	float Tint = 2.8; 	// From datasheet (2.8 typ -- 4.0 max)
-	float ITIME_ms = (Tint * 964 * (256 - ITIME0)) / 1000;
-	delay (ITIME_ms+50);
+	// Wait for ADC to finish
+	uint32_t started = millis();
+	uint8_t answer = 0;
+	while ((answer & 0x10) == 0) {
+		delay(10);
+		Wire.beginTransmission(address);
+		Wire.write(0x80);
+		Wire.endTransmission();
+		Wire.requestFrom(address, 1);
+		answer = Wire.read();
+		if (millis() - started > Tmt) {
+			if (debug) SerialUSB.println("ERROR: Timeout waiting for reading");
+			return false;
+		}
+	}
 
 	// Ask for reading
 	Wire.beginTransmission(address);
@@ -275,30 +300,78 @@ bool Sck_BH1721FVC::get()
 	Wire.requestFrom(address, 4);
 
 	// Get result
-	int16_t DATA0 = 0;
-	uint16_t DATA1 = 0;
-	DATA0 = Wire.read();
-	DATA0 = DATA0 | (Wire.read()<<8);
-	DATA1 = Wire.read();
-	DATA1 = DATA1 | (Wire.read()<<8);
+	uint16_t IDATA0 = 0;
+	uint16_t IDATA1 = 0;
+	IDATA0 = Wire.read();
+	IDATA0 = IDATA0 | (Wire.read()<<8);
+	IDATA1 = Wire.read();
+	IDATA1 = IDATA1 | (Wire.read()<<8);
+	DATA0 = (float)IDATA0;
+	DATA1 = (float)IDATA1;
 
 	// Setup gain
-	uint8_t Gain = 1;
+	Gain = 1;
 	if (GAIN == 0x01) Gain = 2;
 	else if (GAIN == 0x02) Gain = 64;
 	else if (GAIN == 0x03) Gain = 128;
 
+	return true;
+}
+bool Sck_BH1730FVC::get()
+{
+	// Start in the default integration time
+	ITIME = 218;
+
+	if (!updateValues()) return false;
+
+	// Adjust the Integration Time (ITIME)
+	for (uint8_t i=0; i<6; i++) {
+
+		if (DATA0 > goUp || DATA1 > goUp) {
+			ITIME += (((ITIME_max - ITIME) / 2) + 1);
+			if (ITIME > 250) ITIME = ITIME_max;
+
+			if (debug) {
+				SerialUSB.print(DATA0);
+				SerialUSB.print(" -- ");
+				SerialUSB.print(DATA1);
+				SerialUSB.print(" >> ");
+				SerialUSB.println(ITIME);
+			}
+		} else break;
+
+		if (!updateValues()) return false;
+	}
+
+	// Lux calculation (Datasheet page 13)
 	float Lx = 0;
-	if (DATA0 !=0) {
-	if (DATA1/DATA0 < 0.26) Lx = (1.290 * DATA0 - 2.733 * DATA1) / Gain * 102.6 / ITIME_ms;
-	else if (DATA1/DATA0 < 0.55) Lx = (0.795 * DATA0 - 0.859 * DATA1) / Gain * 102.6 / ITIME_ms;
-	else if (DATA1/DATA0 < 1.09) Lx = (0.510 * DATA0 - 0.345 * DATA1) / Gain * 102.6 / ITIME_ms;
-	else if (DATA1/DATA0 < 2.13) Lx = (0.276 * DATA0 - 0.130 * DATA1) / Gain * 102.6 / ITIME_ms;
-	else Lx = 0;
+	if (DATA0 > 0 && DATA1 > 0) {
+		if (DATA1/DATA0 < 0.26) Lx = ((1.290 * DATA0 - 2.733 * DATA1) / Gain) * (102.6 / ITIME_ms);
+		else if (DATA1/DATA0 < 0.55) Lx = ((0.795 * DATA0 - 0.859 * DATA1) / Gain) * (102.6 / ITIME_ms);
+		else if (DATA1/DATA0 < 1.09) Lx = ((0.510 * DATA0 - 0.345 * DATA1) / Gain) * (102.6 / ITIME_ms);
+		else if (DATA1/DATA0 < 2.13) Lx = ((0.276 * DATA0 - 0.130 * DATA1) / Gain) * (102.6 / ITIME_ms);
+		else Lx = 0;
 	}
 
 	Lx = max(0, Lx);
-	reading  = Lx;
+	reading  = (int)Lx;
+
+	if (debug) {
+		SerialUSB.print("Integration Time ITIME_ms: ");
+		SerialUSB.println(ITIME_ms);
+		SerialUSB.print("Measurement Time Tmt: ");
+		SerialUSB.println(Tmt);
+		SerialUSB.print("Gain: ");
+		SerialUSB.println(Gain);
+		SerialUSB.print("Visible Light DATA0: ");
+		SerialUSB.println(DATA0);
+		SerialUSB.print("Infrared Light DATA1: ");
+		SerialUSB.println(DATA1);
+		SerialUSB.print("Calculated Lux: ");
+		SerialUSB.println(Lx);
+	}
+
+	stop();
 
 	return true;
 }
@@ -332,21 +405,24 @@ bool Sck_SHT31::stop()
 }
 bool Sck_SHT31::update()
 {
-	uint32_t elapsed = millis() - lastTime;
-	if (elapsed < timeout) delay(timeout - elapsed);
-
 	uint8_t readbuffer[6];
-	sendComm(SINGLE_SHOT_HIGH_REP);
+	if (!sendComm(SINGLE_SHOT_HIGH_REP)) return false;
 
-	_Wire->requestFrom(address, (uint8_t)6);
-	// Wait for answer (datasheet says 15ms is the max)
 	uint32_t started = millis();
-	while(_Wire->available() != 6) {
-		if (millis() - started > timeout) return 0;
+	while (_Wire->requestFrom(address, 6) < 6) {
+		if (millis() - started > timeout) {
+			if (debug) SerialUSB.println("ERROR: Timed out waiting for SHT31 sensor!!!");
+			return false;
+		}
 	}
 
 	// Read response
-	for (uint8_t i=0; i<6; i++) readbuffer[i] = _Wire->read();
+	if (debug) SerialUSB.print("Response: ");
+	for (uint8_t i=0; i<6; i++) {
+		readbuffer[i] = _Wire->read();
+		if (debug) SerialUSB.print(readbuffer[i]);
+	}
+	if (debug) SerialUSB.println();
 
 	uint16_t ST, SRH;
 	ST = readbuffer[0];
@@ -354,13 +430,20 @@ bool Sck_SHT31::update()
 	ST |= readbuffer[1];
 
 	// Check Temperature crc
-	if (readbuffer[2] != crc8(readbuffer, 2)) return false;
+	if (readbuffer[2] != crc8(readbuffer, 2)) {
+		if (debug) SerialUSB.println("ERROR: Temperature reading CRC failed!!!");
+		return false;
+	}
 	SRH = readbuffer[3];
 	SRH <<= 8;
 	SRH |= readbuffer[4];
 
 	// check Humidity crc
-	if (readbuffer[5] != crc8(readbuffer+3, 2)) return false;
+	if (readbuffer[5] != crc8(readbuffer+3, 2)) {
+		if (debug) SerialUSB.println("ERROR: Humidity reading CRC failed!!!");
+		return false;
+	}
+
 	double temp = ST;
 	temp *= 175;
 	temp /= 0xffff;
@@ -372,16 +455,16 @@ bool Sck_SHT31::update()
 	shum /= 0xFFFF;
 	humidity = (float)shum;
 
-	lastTime = millis();
-
 	return true;
 }
-void Sck_SHT31::sendComm(uint16_t comm)
+bool Sck_SHT31::sendComm(uint16_t comm)
 {
 	_Wire->beginTransmission(address);
 	_Wire->write(comm >> 8);
 	_Wire->write(comm & 0xFF);
-	_Wire->endTransmission();
+	if (_Wire->endTransmission() != 0) return false;
+
+	return true;
 }
 uint8_t Sck_SHT31::crc8(const uint8_t *data, int len)
 {
@@ -406,6 +489,16 @@ uint8_t Sck_SHT31::crc8(const uint8_t *data, int len)
 		}
 	}
 	return crc;
+}
+bool Sck_SHT31::getReading()
+{
+	uint8_t tried = retrys;
+	while (tried > 0) {
+		if (update()) return true;
+		tried--;
+	}
+
+	return false;
 }
 
 // Gases

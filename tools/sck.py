@@ -24,6 +24,8 @@ class sck:
     paths['base'] = subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).rstrip()
     paths['binFolder'] = os.path.join(str(paths['base']), 'bin')
     paths['esptoolPy'] = os.path.join(str(paths['base']), 'tools', 'esptool.py')
+    if not os.path.exists(paths['binFolder']):
+        os.makedirs(paths['binFolder'])
     os.chdir('esp')
     paths['pioHome'] = [s.split()[1].strip(',').strip("'") for s in subprocess.check_output(['pio', 'run', '-t', 'envdump']).split('\n') if "'PIOHOME_DIR'" in s][0]
     os.chdir(paths['base'])
@@ -107,7 +109,10 @@ class sck:
                     self.err_out('Timeout waiting for serial port')
                     sys.exit()
             time.sleep(0.1)
-            if self.serialPort.is_open: return
+            try:
+                if self.serialPort.write("\r\n"): return
+            except:
+                pass
 
     def checkConsole(self):
         timeout = time.time() + 15
@@ -124,6 +129,9 @@ class sck:
     def getInfo(self):
         if self.infoReady: return
         self.updateSerial()
+        self.serialPort.write('\r\nshell -on\r\n')
+        time.sleep(3)
+        self.serialPort.read(self.serialPort.in_waiting).split()
         self.serialPort.write('\r\nversion\r\n')
         time.sleep(0.5)
         m = self.serialPort.read(self.serialPort.in_waiting).split()
@@ -227,7 +235,8 @@ class sck:
     def flashESP(self, speed=921600, out=sys.__stdout__):
         os.chdir(self.paths['base'])
         if not self.getBridge(speed): return False
-        flashedESP = subprocess.call([self.paths['esptool'], '-cp', self.serialPort_name, '-cb', str(speed), '-ca', '0x000000', '-cf', os.path.join(self.paths['binFolder'], self.files['espBin'])], stdout=out, stderr=subprocess.STDOUT)
+        flashedESP = subprocess.call(['tools/esptool.py', '--before', 'no_reset', '--port', self.serialPort_name, '--baud', str(speed), 'write_flash', '0x000000', os.path.join(self.paths['binFolder'], self.files['espBin'])], stdout=out, stderr=subprocess.STDOUT)
+        # flashedESP = subprocess.call([self.paths['esptool'], '-cp', self.serialPort_name, '-cb', str(speed), '-ca', '0x000000', '-cf', os.path.join(self.paths['binFolder'], self.files['espBin'])], stdout=out, stderr=subprocess.STDOUT)
         if flashedESP == 0:
             time.sleep(1)
             return True
