@@ -5,7 +5,11 @@ import serial.tools.list_ports
 import os
 import time
 import subprocess
-import uf2conv
+try:
+    import uf2conv
+except ModuleNotFoundError:
+    print ('Cannot import uf2conv module')
+    pass
 import shutil
 import sys
 import binascii
@@ -21,7 +25,7 @@ class sck:
 
     # paths
     paths = {}
-    paths['base'] = subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).rstrip()
+    paths['base'] = subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).decode('utf-8').rstrip()
     paths['binFolder'] = os.path.join(str(paths['base']), 'bin')
     paths['esptoolPy'] = os.path.join(str(paths['base']), 'tools', 'esptool.py')
     if not os.path.exists(paths['binFolder']):
@@ -110,7 +114,7 @@ class sck:
                     sys.exit()
             time.sleep(0.1)
             try:
-                if self.serialPort.write("\r\n"): return
+                if self.serialPort.write(b"\r\n"): return
             except:
                 pass
 
@@ -208,16 +212,16 @@ class sck:
         timeout = time.time() + 15
         while True:
             self.updateSerial(speed)
-            self.serialPort.write('\r\n')
+            self.serialPort.write('\r\n'.encode())
             time.sleep(0.1)
-            buff = self.serialPort.read(self.serialPort.in_waiting)
+            buff = self.serialPort.read(self.serialPort.in_waiting).decode('UTF-8')
             if 'SCK' in buff: break
             if time.time() > timeout:
                 self.err_out('Timeout waiting for SAM bridge')
                 return False
             time.sleep(2.5)
         buff = self.serialPort.read(self.serialPort.in_waiting)
-        self.serialPort.write('esp -flash ' + str(speed) + '\r\n')
+        self.serialPort.write(('esp -flash ' + str(speed) + '\r\n').encode())
         time.sleep(0.2)
         buff = self.serialPort.read(self.serialPort.in_waiting)
         return True
@@ -235,7 +239,7 @@ class sck:
     def flashESP(self, speed=921600, out=sys.__stdout__):
         os.chdir(self.paths['base'])
         if not self.getBridge(speed): return False
-        flashedESP = subprocess.call(['tools/esptool.py', '--before', 'no_reset', '--port', self.serialPort_name, '--baud', str(speed), 'write_flash', '0x000000', os.path.join(self.paths['binFolder'], self.files['espBin'])], stdout=out, stderr=subprocess.STDOUT)
+        flashedESP = subprocess.call(['tools/esptool.py', '--before', 'no_reset', '--port', self.serialPort_name, '--baud', str(int(speed)), 'write_flash', '0x000000', os.path.join(self.paths['binFolder'], self.files['espBin'])], stdout=out, stderr=subprocess.STDOUT)
         # flashedESP = subprocess.call([self.paths['esptool'], '-cp', self.serialPort_name, '-cb', str(speed), '-ca', '0x000000', '-cf', os.path.join(self.paths['binFolder'], self.files['espBin'])], stdout=out, stderr=subprocess.STDOUT)
         if flashedESP == 0:
             time.sleep(1)
