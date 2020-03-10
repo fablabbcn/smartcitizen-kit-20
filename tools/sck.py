@@ -31,7 +31,7 @@ class sck:
     if not os.path.exists(paths['binFolder']):
         os.makedirs(paths['binFolder'])
     os.chdir('esp')
-    paths['pioHome'] = [s.split()[1].strip(',').strip("'") for s in subprocess.check_output(['pio', 'run', '-t', 'envdump']).split('\n') if "'PIOHOME_DIR'" in s][0]
+    paths['pioHome'] = [s.split()[1].strip(',').strip("'") for s in subprocess.check_output(['pio', 'run', '-t', 'envdump']).decode('utf-8').split('\n') if "'PROJECT_PACKAGES_DIR'" in s][0]
     os.chdir(paths['base'])
     paths['esptool'] = os.path.join(str(paths['pioHome']), 'packages', 'tool-esptool', 'esptool')
 
@@ -184,7 +184,7 @@ class sck:
         piorun = subprocess.call(['pio', 'run'], stdout=out, stderr=subprocess.STDOUT)
         if piorun == 0:
             try:
-                shutil.copyfile(os.path.join(os.getcwd(), '.pioenvs', 'sck2', 'firmware.bin'), os.path.join(self.paths['binFolder'], self.files['samBin']))
+                shutil.copyfile(os.path.join(os.getcwd(), '.pio', 'build', 'sck2', 'firmware.bin'), os.path.join(self.paths['binFolder'], self.files['samBin']))
             except:
                 self.err_out('Failed building SAM firmware')
                 return False
@@ -231,7 +231,7 @@ class sck:
         os.chdir('esp')
         piorun = subprocess.call(['pio', 'run'], stdout=out, stderr=subprocess.STDOUT)
         if piorun == 0:
-            shutil.copyfile(os.path.join(os.getcwd() , '.pioenvs', 'esp12e', 'firmware.bin'), os.path.join(self.paths['binFolder'], self.files['espBin']))
+            shutil.copyfile(os.path.join(os.getcwd() , '.pio', 'build', 'esp12e', 'firmware.bin'), os.path.join(self.paths['binFolder'], self.files['espBin']))
             return True
         self.err_out('Failed building ESP firmware')
         return False
