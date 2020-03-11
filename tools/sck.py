@@ -121,9 +121,9 @@ class sck:
     def checkConsole(self):
         timeout = time.time() + 15
         while True:
-            self.serialPort.write('\r\n')
+            self.serialPort.write(('\r\n').encode())
             time.sleep(0.1)
-            buff = self.serialPort.read(self.serialPort.in_waiting)
+            buff = self.serialPort.read(self.serialPort.in_waiting).decode('utf-8')
             if 'SCK' in buff: return True
             if time.time() > timeout:
                 self.err_out('Timeout waiting for kit console response')
@@ -133,12 +133,12 @@ class sck:
     def getInfo(self):
         if self.infoReady: return
         self.updateSerial()
-        self.serialPort.write('\r\nshell -on\r\n')
+        self.serialPort.write(('\r\nshell -on\r\n').encode())
         time.sleep(3)
-        self.serialPort.read(self.serialPort.in_waiting).split()
-        self.serialPort.write('\r\nversion\r\n')
+        self.serialPort.read(self.serialPort.in_waiting).decode('utf-8').split()
+        self.serialPort.write(('\r\nversion\r\n').encode())
         time.sleep(0.5)
-        m = self.serialPort.read(self.serialPort.in_waiting).split()
+        m = self.serialPort.read(self.serialPort.in_waiting).decode('utf-8').split()
         self.esp_macAddress = m[m.index('address:')+1]
         m.remove('SAM')
         self.sam_firmVer = m[m.index('SAM')+2]
@@ -149,9 +149,9 @@ class sck:
     def getConfig(self):
         self.updateSerial()
         self.checkConsole()
-        self.serialPort.write('\r\nconfig\r\n')
+        self.serialPort.write(('\r\nconfig\r\n').encode())
         time.sleep(0.5)
-        m = self.serialPort.read(self.serialPort.in_waiting).split('\r\n')
+        m = self.serialPort.read(self.serialPort.in_waiting).decode('utf-8').split('\r\n')
         for line in m:
             if 'Mode' in line:
                 mm = line.split('Mode: ')[1].strip()
@@ -214,13 +214,13 @@ class sck:
             self.updateSerial(speed)
             self.serialPort.write('\r\n'.encode())
             time.sleep(0.1)
-            buff = self.serialPort.read(self.serialPort.in_waiting).decode('UTF-8')
+            buff = self.serialPort.read(self.serialPort.in_waiting).decode('utf-8')
             if 'SCK' in buff: break
             if time.time() > timeout:
                 self.err_out('Timeout waiting for SAM bridge')
                 return False
             time.sleep(2.5)
-        buff = self.serialPort.read(self.serialPort.in_waiting)
+        buff = self.serialPort.read(self.serialPort.in_waiting).decode('utf-8')
         self.serialPort.write(('esp -flash ' + str(speed) + '\r\n').encode())
         time.sleep(0.2)
         buff = self.serialPort.read(self.serialPort.in_waiting)
@@ -259,8 +259,8 @@ class sck:
     def reset(self):
         self.updateSerial()
         self.checkConsole();
-        self.serialPort.write('\r\n')
-        self.serialPort.write('reset\r\n')
+        self.serialPort.write(('\r\n').encode())
+        self.serialPort.write(('reset\r\n').encode())
 
     def netConfig(self):
         if len(self.wifi_ssid) == 0 or len(self.token) != 6:
@@ -268,25 +268,25 @@ class sck:
             return False
         self.updateSerial()
         self.checkConsole();
-        self.serialPort.write('\r\nconfig -mode net -wifi "' + self.wifi_ssid + '" "' + self.wifi_pass + '" -token ' + self.token + '\r\n')
+        self.serialPort.write(('\r\nconfig -mode net -wifi "' + self.wifi_ssid + '" "' + self.wifi_pass + '" -token ' + self.token + '\r\n').encode())
         # TODO verify config success
         return True
 
     def sdConfig(self):
         self.updateSerial()
         self.checkConsole();
-        self.serialPort.write('\r\ntime ' + str(int(time.time())) + '\r\n')
+        self.serialPort.write(('\r\ntime ' + str(int(time.time())) + '\r\n').encode())
         if len(self.wifi_ssid) == 0:
-            self.serialPort.write('config -mode sdcard\r\n')
+            self.serialPort.write(('config -mode sdcard\r\n').encode())
         else:
-            self.serialPort.write('config -mode sdcard -wifi "' + self.wifi_ssid + '" "' + self.wifi_pass + '"\r\n')
+            self.serialPort.write(('config -mode sdcard -wifi "' + self.wifi_ssid + '" "' + self.wifi_pass + '"\r\n').encode())
         # TODO verify config success
         return True
 
     def resetConfig(self):
         self.updateSerial()
         self.checkConsole();
-        self.serialPort.write('\r\nconfig -defaults\r\n')
+        self.serialPort.write(('\r\nconfig -defaults\r\n').encode())
         # TODO verify config success
         return True
 
@@ -316,7 +316,7 @@ class sck:
             print('Your device needs a name!')
             # TODO ask for a name
             sys.exit()
-        device['device_token'] = binascii.b2a_hex(os.urandom(3))
+        device['device_token'] = binascii.b2a_hex(os.urandom(3)).decode('utf-8')
         self.token = device['device_token']
         device['description'] = ''
         device['kit_id'] = 20
@@ -330,7 +330,7 @@ class sck:
         self.id = str(backed_device.json()['id'])
         self.platform_url = "https://smartcitizen.me/kits/" + self.id
 
-        self.serialPort.write('\r\nconfig -mode net -wifi "' + wifi_ssid + '" "' + wifi_pass + '" -token ' + self.token + '\r\n')
+        self.serialPort.write(('\r\nconfig -mode net -wifi "' + wifi_ssid + '" "' + wifi_pass + '" -token ' + self.token + '\r\n').encode())
         time.sleep(1)
 
     def inventory_add(self):
