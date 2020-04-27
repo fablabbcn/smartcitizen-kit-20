@@ -12,8 +12,8 @@ The **SCK 2.0** was the development version for the now commercially available [
 ## Documentation
 
 * If you want to read more about the Smartcitizen Kit or its sensors please check our [documentation](http://docs.smartcitizen.me/)
-* Here you can check the [sensor list](http://docs.smartcitizen.me/Smart%20Citizen%20Kit/#sck-20).
-* The SCK provides a comprehensive command shell over USB to manage all the kits functionalities for advanced users: [Using the Smartcitizen Kit shell](http://docs.smartcitizen.me/Components/Firmware/guides/Using%20the%20Shell/) guide.
+* Here you can check the [sensor list](https://docs.smartcitizen.me/Legacy%20Hardware/sck/#sck-20).
+* The SCK provides a comprehensive command shell over USB to manage all the kits functionalities for advanced users: [Using the Smartcitizen Kit shell](https://docs.smartcitizen.me/Guides/Using%20the%20Shell/) guide.
 * A compilation of Smartcitizen hardware work in a single **open publication:** [_Hardware X: Special Issue on Open-Hardware for Environmental Sensing and Instruments_](https://doi.org/10.1016/j.ohx.2019.e00070)
 * You can also follow the [forum](https://forum.smartcitizen.me/) and [twitter](https://twitter.com/SmartCitizenKit) for updates.
 
